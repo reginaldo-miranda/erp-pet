@@ -87,8 +87,12 @@ public static class DependencyInjection
         services.AddScoped<IFiscalService, FiscalService>();
         services.AddScoped<INfeXmlParserService, NfeXmlParserService>();
 
-        // Serviços externos — ViaCEP
+        // Serviços externos — ViaCEP e Busca de Imagens Web
         services.AddHttpClient<ICepService, ViaCepService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddHttpClient<IWebImageSearchService, WebImageSearchService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(10);
         });

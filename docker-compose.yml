@@ -3,18 +3,18 @@ version: '3.8'
 services:
   erp-db:
     image: postgres:16-alpine
-    container_name: erp-postgres
+    container_name: erp-pet-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: erp_db
+      POSTGRES_DB: erp_pet_db
       POSTGRES_USER: erp_user
       POSTGRES_PASSWORD: erp_P@ssw0rd_2026
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - erp_postgres_data:/var/lib/postgresql/data
+      - erp_pet_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp_user -d erp_db"]
+      test: ["CMD-SHELL", "pg_isready -U erp_user -d erp_pet_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,24 +23,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: erp-web
+    container_name: erp-pet-web
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://0.0.0.0:5000
       - DOTNET_USE_POLLING_FILE_WATCHER=1
-      - ConnectionStrings__DefaultConnection=Host=erp-db;Port=5432;Database=erp_db;Username=erp_user;Password=erp_P@ssw0rd_2026
+      - ConnectionStrings__DefaultConnection=Host=erp-db;Port=5432;Database=erp_pet_db;Username=erp_user;Password=erp_P@ssw0rd_2026
     ports:
-      - "5219:5000"
+      - "5220:5000"
     volumes:
       - .:/app
-      - nuget_cache:/root/.nuget/packages
+      - erp_pet_nuget_cache:/root/.nuget/packages
     depends_on:
       erp-db:
         condition: service_healthy
 
 volumes:
-  erp_postgres_data:
+  erp_pet_postgres_data:
     driver: local
-  nuget_cache:
+  erp_pet_nuget_cache:
     driver: local

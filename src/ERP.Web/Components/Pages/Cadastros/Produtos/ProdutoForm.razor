@@ -16,6 +16,7 @@
 @inject NavigationManager Nav
 @inject IWebHostEnvironment Env
 @inject ICurrentEmpresaService EmpresaService
+@inject IWebImageSearchService WebImageSearchService
 
 <PageTitle>@(Id.HasValue ? "Editar Produto" : "Novo Produto")</PageTitle>
 
@@ -46,36 +47,70 @@ else
             </MudItem>
 
             <MudItem xs="12">
-                <MudPaper Outlined="true" Class="pa-3 d-flex align-center gap-4 flex-wrap">
-                    @if (!string.IsNullOrWhiteSpace(_imagemUrl))
-                    {
-                        <MudImage Src="@_imagemUrl" Alt="Foto do Produto" Width="100" Height="100" ObjectFit="ObjectFit.Cover" Class="rounded" />
-                    }
-                    else
-                    {
-                        <MudAvatar Size="Size.Large" Rounded="true" Color="Color.Default" Variant="Variant.Outlined" Style="width:100px;height:100px;">
-                            <MudIcon Icon="@Icons.Material.Filled.AddAPhoto" Size="Size.Large" />
-                        </MudAvatar>
-                    }
-                    <div class="d-flex flex-column gap-2">
-                        <MudText Typo="Typo.subtitle2">Foto do Produto</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Formatos aceitos: JPG, PNG ou WEBP (máx. 5 MB).</MudText>
-                        <div class="d-flex gap-2 align-center">
-                            <MudFileUpload T="IBrowserFile" FilesChanged="OnFotoSelecionada" Accept=".jpg,.jpeg,.png,.webp">
-                                <ActivatorContent>
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" Size="Size.Small">
-                                        @(string.IsNullOrWhiteSpace(_imagemUrl) ? "Escolher Foto" : "Trocar Foto")
-                                    </MudButton>
-                                </ActivatorContent>
-                            </MudFileUpload>
-                            @if (!string.IsNullOrWhiteSpace(_imagemUrl))
-                            {
-                                <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => _imagemUrl = null)">
-                                    Remover
+                <MudPaper Outlined="true" Class="pa-3">
+                    <div class="d-flex align-center gap-4 flex-wrap">
+                        @if (!string.IsNullOrWhiteSpace(_imagemUrl))
+                        {
+                            <MudImage Src="@_imagemUrl" Alt="Foto do Produto" Width="100" Height="100" ObjectFit="ObjectFit.Cover" Class="rounded" />
+                        }
+                        else
+                        {
+                            <MudAvatar Size="Size.Large" Rounded="true" Color="Color.Default" Variant="Variant.Outlined" Style="width:100px;height:100px;">
+                                <MudIcon Icon="@Icons.Material.Filled.AddAPhoto" Size="Size.Large" />
+                            </MudAvatar>
+                        }
+                        <div class="d-flex flex-column gap-2">
+                            <MudText Typo="Typo.subtitle2">Foto do Produto</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Formatos aceitos: JPG, PNG ou WEBP (máx. 5 MB), ou busque automaticamente na internet pelo nome.</MudText>
+                            <div class="d-flex gap-2 align-center flex-wrap">
+                                <MudFileUpload T="IBrowserFile" FilesChanged="OnFotoSelecionada" Accept=".jpg,.jpeg,.png,.webp">
+                                    <ActivatorContent>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" Size="Size.Small">
+                                            @(string.IsNullOrWhiteSpace(_imagemUrl) ? "Escolher Foto" : "Trocar Foto")
+                                        </MudButton>
+                                    </ActivatorContent>
+                                </MudFileUpload>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.ImageSearch" Size="Size.Small"
+                                           Disabled="@(_buscandoFotos || _baixandoFoto)" OnClick="BuscarFotosNaInternet">
+                                    @(_buscandoFotos ? "Buscando..." : "Buscar na Internet")
                                 </MudButton>
-                            }
+                                @if (!string.IsNullOrWhiteSpace(_imagemUrl))
+                                {
+                                    <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => _imagemUrl = null)">
+                                        Remover
+                                    </MudButton>
+                                }
+                            </div>
                         </div>
                     </div>
+
+                    @if (_buscandoFotos || _baixandoFoto)
+                    {
+                        <MudProgressLinear Indeterminate="true" Color="Color.Secondary" Class="mt-3" />
+                    }
+
+                    @if (_fotosWeb.Count > 0)
+                    {
+                        <div class="mt-3">
+                            <div class="d-flex align-center justify-space-between mb-2">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Clique em uma das opções abaixo para selecionar:</MudText>
+                                <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => _fotosWeb.Clear())">Fechar opções</MudButton>
+                            </div>
+                            <MudGrid Spacing="2">
+                                @foreach (var img in _fotosWeb)
+                                {
+                                    <MudItem xs="6" sm="3">
+                                        <MudPaper Outlined="true" Class="pa-2 d-flex flex-column align-center cursor-pointer"
+                                                  Style="transition: border-color 0.15s ease;"
+                                                  @onclick="@(() => SelecionarFotoDaWeb(img))">
+                                            <MudImage Src="@img.ThumbnailUrl" Alt="@img.Title" Width="110" Height="110" ObjectFit="ObjectFit.Contain" Class="rounded mb-1" />
+                                            <MudText Typo="Typo.caption" Color="Color.Primary" Class="fw-bold">Selecionar</MudText>
+                                        </MudPaper>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        </div>
+                    }
                 </MudPaper>
             </MudItem>
 
@@ -163,6 +198,9 @@ else
     private string _cest = string.Empty;
     private string _cfop = string.Empty;
     private string? _imagemUrl;
+    private bool _buscandoFotos = false;
+    private bool _baixandoFoto = false;
+    private List<WebImageResult> _fotosWeb = new();
     private bool _ativo = true;
 
     private List<CategoriaDto> _categorias = new();
@@ -234,6 +272,69 @@ else
 
         _imagemUrl = $"/uploads/produtos/{empresaId}/{nomeArquivo}";
         Snackbar.Add("Foto carregada! Clique em Salvar para confirmar.", Severity.Info);
+    }
+
+    private async Task BuscarFotosNaInternet()
+    {
+        if (string.IsNullOrWhiteSpace(_nome))
+        {
+            Snackbar.Add("Informe o Nome do Produto para buscar fotos na internet.", Severity.Warning);
+            return;
+        }
+
+        _buscandoFotos = true;
+        _fotosWeb.Clear();
+        try
+        {
+            var nomeCategoria = _categorias.FirstOrDefault(c => c.Id == _categoriaId)?.Nome;
+            _fotosWeb = await WebImageSearchService.BuscarImagensAsync(_nome, nomeCategoria, 4);
+            if (_fotosWeb.Count == 0)
+                Snackbar.Add("Nenhuma foto encontrada para este nome.", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao buscar fotos: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _buscandoFotos = false;
+        }
+    }
+
+    private async Task SelecionarFotoDaWeb(WebImageResult img)
+    {
+        if (_baixandoFoto) return;
+
+        _baixandoFoto = true;
+        try
+        {
+            var downloaded = await WebImageSearchService.BaixarImagemAsync(img.Url, img.ThumbnailUrl);
+            if (downloaded is null)
+            {
+                Snackbar.Add("Não foi possível baixar essa imagem. Tente escolher outra opção.", Severity.Warning);
+                return;
+            }
+
+            int empresaId = EmpresaService.EmpresaId ?? 1;
+            var pasta = Path.Combine(Env.WebRootPath, "uploads", "produtos", empresaId.ToString());
+            Directory.CreateDirectory(pasta);
+
+            var nomeArquivo = $"{Guid.NewGuid():N}{downloaded.Value.Extensao}";
+            var caminhoCompleto = Path.Combine(pasta, nomeArquivo);
+            await File.WriteAllBytesAsync(caminhoCompleto, downloaded.Value.Bytes);
+
+            _imagemUrl = $"/uploads/produtos/{empresaId}/{nomeArquivo}";
+            _fotosWeb.Clear();
+            Snackbar.Add("Foto selecionada e salva localmente! Clique em Salvar para confirmar.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao baixar imagem: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _baixandoFoto = false;
+        }
     }
 
     private async Task Salvar()
