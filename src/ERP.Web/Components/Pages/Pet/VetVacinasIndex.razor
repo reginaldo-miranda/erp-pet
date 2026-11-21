@@ -1,0 +1,117 @@
+@page "/pet/vet/vacinas"
+@using ERP.Application.Pet.Ambulatorio
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>Carteira de Vacinas &amp; Alertas</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">Carteira de Vacinação, Vermífugos &amp; Alertas de Reforço</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Registro com lote/validade e acompanhamento automático de doses próximas ou vencidas.
+            </MudText>
+        </div>
+        <MudSwitch T="bool" Value="_apenasAlertas" Color="Color.Warning" Label="Somente Alertas (30 dias)"
+                   ValueChanged="AlternarAlertas" />
+    </div>
+
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">Registrar Aplicação</MudText>
+        <MudGrid AlignItems="Center">
+            <MudItem xs="12" md="3">
+                <MudSelect T="int" @bind-Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var p in _pets) { <MudSelectItem Value="p.Id">@p.Nome</MudSelectItem> }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudSelect T="TipoPreventivoPet" @bind-Value="_tipo" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var t in Enum.GetValues<TipoPreventivoPet>()) { <MudSelectItem Value="t">@t</MudSelectItem> }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudTextField @bind-Value="_nomeProduto" Label="Vacina / Vermífugo *" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudTextField @bind-Value="_lote" Label="Lote" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudDatePicker @bind-Date="_proximaAplicacao" Label="Próximo Reforço" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Registrar">Registrar Aplicação</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudTable Items="_registros" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Pet</MudTh><MudTh>Tutor</MudTh><MudTh>Tipo</MudTh><MudTh>Produto</MudTh><MudTh>Lote</MudTh><MudTh>Aplicação</MudTh><MudTh>Próximo Reforço</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd><strong>@context.NomePet</strong></MudTd>
+            <MudTd>@context.NomeTutor (@(context.CelularTutor ?? "-"))</MudTd>
+            <MudTd>@context.Tipo</MudTd>
+            <MudTd>@context.NomeProduto</MudTd>
+            <MudTd>@(context.NumeroLote ?? "-")</MudTd>
+            <MudTd>@context.DataAplicacao.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>
+                @if (context.ProximaAplicacao.HasValue)
+                {
+                    var vencida = context.ProximaAplicacao.Value < DateTime.UtcNow;
+                    <MudChip T="string" Size="Size.Small" Color="@(vencida ? Color.Error : Color.Warning)">
+                        @context.ProximaAplicacao.Value.ToLocalTime().ToString("dd/MM/yyyy")
+                    </MudChip>
+                }
+                else { <span>-</span> }
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<PetDto> _pets = new();
+    private List<VacinaVermifugoDto> _registros = new();
+    private bool _apenasAlertas;
+
+    private int _petId;
+    private TipoPreventivoPet _tipo = TipoPreventivoPet.Vacina;
+    private string _nomeProduto = string.Empty;
+    private string? _lote;
+    private DateTime? _proximaAplicacao = DateTime.Today.AddYears(1);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var pRes = await Mediator.Send(new GetPetsQuery());
+        if (pRes.Sucesso && pRes.Dados != null)
+        {
+            _pets = pRes.Dados;
+            if (_pets.Count > 0) _petId = _pets[0].Id;
+        }
+        await Carregar();
+    }
+
+    private async Task Carregar()
+    {
+        var res = await Mediator.Send(new GetVacinasVermifugosQuery(null, _apenasAlertas));
+        if (res.Sucesso && res.Dados != null) _registros = res.Dados;
+    }
+
+    private async Task AlternarAlertas(bool val)
+    {
+        _apenasAlertas = val;
+        await Carregar();
+    }
+
+    private async Task Registrar()
+    {
+        if (_petId <= 0) { Snackbar.Add("Selecione um Pet.", Severity.Warning); return; }
+        var res = await Mediator.Send(new RegistrarVacinaVermifugoCommand(_petId, null, _tipo, _nomeProduto, null, _lote, null, null, _proximaAplicacao, null));
+        if (res.Sucesso) { Snackbar.Add("Aplicação registrada!", Severity.Success); _nomeProduto = ""; _lote = null; await Carregar(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

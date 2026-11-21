@@ -1,0 +1,133 @@
+@page "/pet/comandas"
+@using ERP.Application.Common.Interfaces
+@using ERP.Application.Pet.Comandas
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@using Microsoft.EntityFrameworkCore
+@inject IMediator Mediator
+@inject IApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>Comandas Unificadas - ERP Pet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Comandas Unificadas (Loja + Banho &amp; Tosa + Hospital)</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Centralize consumos de todos os setores em uma única comanda com split fiscal automático (NFC-e/NF-e vs NFS-e) e cobertura de convênio.
+    </MudText>
+
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">Abrir Nova Comanda</MudText>
+        <MudGrid AlignItems="Center">
+            <MudItem xs="12" md="4">
+                <MudSelect T="int" @bind-Value="_clienteId" Label="Tutor *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var c in _clientes)
+                    {
+                        <MudSelectItem Value="c.Id">@c.Nome</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudSelect T="int?" @bind-Value="_petId" Label="Pet (Opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                    @foreach (var p in _pets)
+                    {
+                        <MudSelectItem T="int?" Value="p.Id">@p.Nome (@p.Especie)</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AbrirComanda">Abrir Comanda</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudTable Items="_comandas" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Número</MudTh>
+            <MudTh>Tutor / Pet</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Produtos (NFC-e)</MudTh>
+            <MudTh>Serviços (NFS-e)</MudTh>
+            <MudTh>Convênio</MudTh>
+            <MudTh>Líquido</MudTh>
+            <MudTh>Ações</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd><strong>@context.Numero</strong></MudTd>
+            <MudTd>@context.NomeTutor @(context.NomePet != null ? $"• {context.NomePet}" : "")</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small" Color="@(context.Status == StatusComanda.Aberta ? Color.Info : Color.Success)">
+                    @context.Status
+                </MudChip>
+            </MudTd>
+            <MudTd>@context.SplitFiscal.TotalProdutosNfceNfe.ToString("C2")</MudTd>
+            <MudTd>@context.SplitFiscal.TotalServicosNfse.ToString("C2")</MudTd>
+            <MudTd>@context.ValorCobertoConvenio.ToString("C2")</MudTd>
+            <MudTd><strong>@context.ValorLiquido.ToString("C2")</strong></MudTd>
+            <MudTd>
+                @if (context.Status == StatusComanda.Aberta)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
+                               OnClick="() => FecharComanda(context.Id)">
+                        Fechar / Faturar
+                    </MudButton>
+                }
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<ComandaAtendimentoDto> _comandas = new();
+    private List<ERP.Domain.Core.Entities.Cadastros.Cliente> _clientes = new();
+    private List<PetDto> _pets = new();
+    private int _clienteId;
+    private int? _petId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = await DbContext.Clientes.AsNoTracking().OrderBy(c => c.Nome).Take(200).ToListAsync();
+        if (_clientes.Count > 0) _clienteId = _clientes[0].Id;
+
+        var petsRes = await Mediator.Send(new GetPetsQuery());
+        if (petsRes.Sucesso && petsRes.Dados != null) _pets = petsRes.Dados;
+
+        await CarregarComandas();
+    }
+
+    private async Task CarregarComandas()
+    {
+        var res = await Mediator.Send(new GetComandasQuery());
+        if (res.Sucesso && res.Dados != null) _comandas = res.Dados;
+    }
+
+    private async Task AbrirComanda()
+    {
+        if (_clienteId <= 0)
+        {
+            Snackbar.Add("Selecione um Tutor.", Severity.Warning);
+            return;
+        }
+        var res = await Mediator.Send(new AbrirComandaCommand(_clienteId, _petId, null, null));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Comanda aberta!", Severity.Success);
+            await CarregarComandas();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task FecharComanda(int id)
+    {
+        var res = await Mediator.Send(new FecharComandaCommand(id));
+        if (res.Sucesso && res.Dados != null)
+        {
+            Snackbar.Add($"Comanda fechada! NFC-e: {res.Dados.TotalProdutosNfceNfe:C2} | NFS-e: {res.Dados.TotalServicosNfse:C2}", Severity.Success);
+            await CarregarComandas();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

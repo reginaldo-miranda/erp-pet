@@ -75,6 +75,23 @@ public static class DatabaseSeeder
             ("Fiscal.Tabelas.Visualizar", "Fiscal", "Tabelas", "Visualizar", "Consultar tabelas NCM e CFOP"),
             ("Contabilidade.Eventos.Visualizar", "Contabilidade", "Eventos", "Visualizar", "Visualizar eventos contábeis"),
 
+            ("Pet.Pets.Visualizar", "Pet", "Pets", "Visualizar", "Visualizar cadastro de Pets e Tutores"),
+            ("Pet.Pets.Gerenciar", "Pet", "Pets", "Gerenciar", "Cadastrar e editar Pets e vínculos com Tutores"),
+            ("Pet.Granel.Gerenciar", "Pet", "Granel", "Gerenciar", "Abrir sacos para venda a granel"),
+            ("Pet.Comandas.Visualizar", "Pet", "Comandas", "Visualizar", "Visualizar comandas unificadas"),
+            ("Pet.Comandas.Gerenciar", "Pet", "Comandas", "Gerenciar", "Abrir, lançar itens e fechar comandas"),
+            ("Pet.Convenios.Gerenciar", "Pet", "Convenios", "Gerenciar", "Gerenciar convênios e planos de saúde pet"),
+            ("Pet.BanhoTosa.Visualizar", "Pet", "BanhoTosa", "Visualizar", "Visualizar agenda e fila de Banho & Tosa"),
+            ("Pet.BanhoTosa.Gerenciar", "Pet", "BanhoTosa", "Gerenciar", "Agendar, fazer check-in e operar fila de Banho & Tosa"),
+            ("Pet.BanhoTosa.Comissoes", "Pet", "BanhoTosa", "Comissoes", "Visualizar e gerenciar comissões de Banho & Tosa"),
+            ("Pet.VetAmbulatorio.Visualizar", "Pet", "VetAmbulatorio", "Visualizar", "Visualizar agenda clínica, prontuário SOAP e vacinas"),
+            ("Pet.VetAmbulatorio.Gerenciar", "Pet", "VetAmbulatorio", "Gerenciar", "Realizar triagem, evoluir prontuário SOAP, receitar e aplicar vacinas"),
+            ("Pet.VetInternacao.Gerenciar", "Pet", "VetInternacao", "Gerenciar", "Gerenciar baias, internações, aprazamento de enfermagem e evoluções"),
+            ("Pet.VetCirurgico.Gerenciar", "Pet", "VetCirurgico", "Gerenciar", "Gerenciar cirurgias, termos de consentimento e exames"),
+            ("Pet.PortalTutor.Gerenciar", "Pet", "PortalTutor", "Gerenciar", "Acessar e gerenciar Portal Web do Tutor"),
+            ("Pet.WhatsApp.Gerenciar", "Pet", "WhatsApp", "Gerenciar", "Configurar e disparar notificações WhatsApp"),
+            ("Admin.Modulos.Gerenciar", "Admin", "Modulos", "Gerenciar", "Gerenciar plano e módulos ativos da empresa"),
+
             ("Admin.Usuarios.Gerenciar", "Admin", "Usuarios", "Gerenciar", "Gerenciar usuários e permissões do sistema")
         };
 
@@ -248,5 +265,8 @@ public static class DatabaseSeeder
 
         // 10. Seed do Módulo Fiscal (CFOPs, NCMs, Regimes e Regras Tributárias)
         await DbInitializerFiscal.SeedFiscalAsync(context);
+
+        // 11. Seed do Catálogo de Módulos ERP Pet e ativação padrão para a empresa inicial
+        await DbInitializerPet.SeedPetAsync(context);
     }
 }

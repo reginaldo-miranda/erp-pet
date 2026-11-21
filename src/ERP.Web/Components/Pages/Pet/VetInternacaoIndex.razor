@@ -1,0 +1,213 @@
+@page "/pet/vet/internacao"
+@using ERP.Application.Common.Interfaces
+@using ERP.Application.Pet.Ambulatorio
+@using ERP.Application.Pet.Comandas
+@using ERP.Application.Pet.Internacao
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@using Microsoft.EntityFrameworkCore
+@inject IMediator Mediator
+@inject IApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>Internação 24h &amp; Mapa de Baias</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Hospital Veterinário — Internação 24h, Baias &amp; Enfermagem</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+        <MudTabPanel Text="Mapa de Baias & Admissão">
+            <MudGrid Class="mb-4">
+                @foreach (var baia in _baias)
+                {
+                    <MudItem xs="6" sm="4" md="3" lg="2">
+                        <MudCard Outlined="true">
+                            <MudCardContent Class="pa-3">
+                                <MudText Typo="Typo.h6">@baia.Codigo</MudText>
+                                <MudText Typo="Typo.caption">@baia.Setor</MudText><br />
+                                <MudChip T="string" Size="Size.Small" Color="@(baia.Status == StatusBaiaInternacao.Livre ? Color.Success : Color.Error)">
+                                    @baia.Status
+                                </MudChip>
+                                <MudText Typo="Typo.caption">@baia.ValorDiaria.ToString("C2")/dia</MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.h6" Class="mb-3">Admitir Paciente na Internação</MudText>
+                <MudGrid AlignItems="Center">
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense" ValueChanged="OnPetChanged">
+                            @foreach (var p in _pets) { <MudSelectItem Value="p.Id">@p.Nome</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" @bind-Value="_vetId" Label="Veterinário *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var v in _vets) { <MudSelectItem Value="v.Id">@v.Nome</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="int" @bind-Value="_baiaId" Label="Baia Livre *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var b in _baias.Where(x => x.Status == StatusBaiaInternacao.Livre)) { <MudSelectItem Value="b.Id">@b.Codigo (@b.Setor)</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="int?" @bind-Value="_comandaId" Label="Comanda" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            @foreach (var c in _comandasAbertas) { <MudSelectItem T="int?" Value="c.Id">@c.Numero</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Admitir">Internar</MudButton>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_motivo" Label="Motivo / Diagnóstico da Internação *" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <MudPaper Class="pa-4" Outlined="true">
+                <MudText Typo="Typo.h6" Class="mb-3">Cadastrar Baia / Leito</MudText>
+                <MudGrid AlignItems="Center">
+                    <MudItem xs="6" md="2"><MudTextField @bind-Value="_novaBaiaCod" Label="Código (ex: UTI-01)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="6" md="3"><MudTextField @bind-Value="_novaBaiaNome" Label="Descrição" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudSelect T="SetorInternacao" @bind-Value="_novaBaiaSetor" Label="Setor" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var s in Enum.GetValues<SetorInternacao>()) { <MudSelectItem Value="s">@s</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="6" md="2"><MudNumericField T="decimal" @bind-Value="_novaBaiaDiaria" Label="Diária (R$)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="12" md="2"><MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="CriarBaia">Criar Baia</MudButton></MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Enfermagem, Aprazamento & Evolução">
+            @foreach (var inter in _internacoes.Where(i => i.Status == StatusInternacaoPet.Ativa))
+            {
+                <MudPaper Class="pa-4 mb-4" Elevation="2">
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <div>
+                            <MudText Typo="Typo.h6">@inter.Numero — @inter.NomePet (Baia @inter.CodigoBaia / @inter.SetorBaia)</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Tutor: @inter.NomeTutor | Vet: @inter.NomeVeterinario | Motivo: @inter.MotivoInternacao</MudText>
+                        </div>
+                        <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Success" OnClick="() => DarAlta(inter.Id)">
+                            Dar Alta Médica
+                        </MudButton>
+                    </div>
+
+                    <MudText Typo="Typo.subtitle2" Class="mt-3 mb-1">Grade Horária de Enfermagem</MudText>
+                    <MudTable Items="inter.ChecagensPendentes" Dense="true" Hover="true">
+                        <HeaderContent><MudTh>Previsto</MudTh><MudTh>Medicação</MudTh><MudTh>Dose</MudTh><MudTh>Status</MudTh><MudTh>Ação</MudTh></HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.DataHoraPrevista.ToLocalTime().ToString("dd/MM HH:mm")</MudTd>
+                            <MudTd>@context.DescricaoMedicamento</MudTd>
+                            <MudTd>@context.Dose</MudTd>
+                            <MudTd><MudChip T="string" Size="Size.Small" Color="@(context.Status == StatusChecagemEnfermagem.Aplicado ? Color.Success : Color.Warning)">@context.Status</MudChip></MudTd>
+                            <MudTd>
+                                @if (context.Status == StatusChecagemEnfermagem.Pendente)
+                                {
+                                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => ChecarDose(context.Id)">
+                                        Marcar Aplicado
+                                    </MudButton>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            }
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<BaiaInternacaoDto> _baias = new();
+    private List<InternacaoDto> _internacoes = new();
+    private List<PetDto> _pets = new();
+    private List<VeterinarioDto> _vets = new();
+    private List<ComandaAtendimentoDto> _comandasAbertas = new();
+    private int? _depositoPadraoId;
+
+    private int _petId;
+    private int _clienteId;
+    private int _vetId;
+    private int _baiaId;
+    private int? _comandaId;
+    private string _motivo = string.Empty;
+
+    private string _novaBaiaCod = string.Empty;
+    private string _novaBaiaNome = string.Empty;
+    private SetorInternacao _novaBaiaSetor = SetorInternacao.Canil;
+    private decimal _novaBaiaDiaria = 180m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dep = await DbContext.Depositos.AsNoTracking().FirstOrDefaultAsync();
+        _depositoPadraoId = dep?.Id;
+
+        var pRes = await Mediator.Send(new GetPetsQuery());
+        if (pRes.Sucesso && pRes.Dados != null) { _pets = pRes.Dados; if (_pets.Count > 0) OnPetChanged(_pets[0].Id); }
+
+        var vRes = await Mediator.Send(new GetVeterinariosQuery());
+        if (vRes.Sucesso && vRes.Dados != null) { _vets = vRes.Dados; if (_vets.Count > 0) _vetId = _vets[0].Id; }
+
+        var cRes = await Mediator.Send(new GetComandasQuery(StatusComanda.Aberta));
+        if (cRes.Sucesso && cRes.Dados != null) _comandasAbertas = cRes.Dados;
+
+        await CarregarTudo();
+    }
+
+    private void OnPetChanged(int petId)
+    {
+        _petId = petId;
+        _clienteId = _pets.FirstOrDefault(p => p.Id == petId)?.Tutores.FirstOrDefault()?.ClienteId ?? 0;
+    }
+
+    private async Task CarregarTudo()
+    {
+        var b = await Mediator.Send(new GetBaiasInternacaoQuery());
+        if (b.Sucesso && b.Dados != null)
+        {
+            _baias = b.Dados;
+            var livre = _baias.FirstOrDefault(x => x.Status == StatusBaiaInternacao.Livre);
+            if (livre != null) _baiaId = livre.Id;
+        }
+        var i = await Mediator.Send(new GetInternacoesAtivasQuery());
+        if (i.Sucesso && i.Dados != null) _internacoes = i.Dados;
+    }
+
+    private async Task CriarBaia()
+    {
+        var res = await Mediator.Send(new CreateBaiaInternacaoCommand(_novaBaiaCod, _novaBaiaNome, _novaBaiaSetor, _novaBaiaDiaria));
+        if (res.Sucesso) { Snackbar.Add("Baia criada!", Severity.Success); _novaBaiaCod = ""; _novaBaiaNome = ""; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task Admitir()
+    {
+        if (_petId <= 0 || _vetId <= 0 || _baiaId <= 0 || string.IsNullOrWhiteSpace(_motivo))
+        {
+            Snackbar.Add("Preencha Pet, Veterinário, Baia Livre e Motivo.", Severity.Warning);
+            return;
+        }
+        var res = await Mediator.Send(new AdmitirInternacaoCommand(_petId, _clienteId, _vetId, _baiaId, _comandaId, _motivo));
+        if (res.Sucesso) { Snackbar.Add("Paciente internado!", Severity.Success); _motivo = ""; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ChecarDose(int checagemId)
+    {
+        var res = await Mediator.Send(new ChecarEnfermagemCommand(checagemId, "Enfermagem Plantão", _depositoPadraoId, null));
+        if (res.Sucesso) { Snackbar.Add("Medicação checada (estoque e comanda atualizados)!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task DarAlta(int internacaoId)
+    {
+        var res = await Mediator.Send(new DarAltaInternacaoCommand(internacaoId, StatusInternacaoPet.AltaMedica));
+        if (res.Sucesso) { Snackbar.Add("Alta médica registrada e diárias lançadas!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

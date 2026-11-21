@@ -1,0 +1,113 @@
+@page "/admin/modulos"
+@using ERP.Application.Modulos
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>Planos & Módulos - ERP Pet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Planos &amp; Módulos do Sistema</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Configure o porte da empresa (Pequeno, Médio ou Grande) ou ative módulos individuais (Add-ons).
+    </MudText>
+
+    @if (_carregando)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_config != null)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudGrid AlignItems="Center">
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.h6">@_config.NomeEmpresa</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Plano Atual: <strong>@_config.PlanoAtual</strong>
+                    </MudText>
+                </MudItem>
+                <MudItem xs="12" md="6" Class="d-flex justify-end gap-2 flex-wrap">
+                    <MudButton Variant="@(_config.PlanoAtual == PlanoLicenca.Pequeno ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Info" OnClick="() => AplicarPlano(PlanoLicenca.Pequeno)">
+                        Pequeno (Loja + Banho)
+                    </MudButton>
+                    <MudButton Variant="@(_config.PlanoAtual == PlanoLicenca.Medio ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Primary" OnClick="() => AplicarPlano(PlanoLicenca.Medio)">
+                        Médio (+ Clínica + Tutor)
+                    </MudButton>
+                    <MudButton Variant="@(_config.PlanoAtual == PlanoLicenca.Grande ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Success" OnClick="() => AplicarPlano(PlanoLicenca.Grande)">
+                        Grande (Hospital 24h)
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <MudTable Items="_config.Modulos" Hover="true" Striped="true" Elevation="2">
+            <HeaderContent>
+                <MudTh>Módulo</MudTh>
+                <MudTh>Categoria</MudTh>
+                <MudTh>Descrição</MudTh>
+                <MudTh>Origem</MudTh>
+                <MudTh>Ativo</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd><strong>@context.Nome</strong></MudTd>
+                <MudTd><MudChip T="string" Size="Size.Small" Color="Color.Default">@context.Categoria</MudChip></MudTd>
+                <MudTd>@context.Descricao</MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small" Color="@(context.Origem == OrigemModuloEmpresa.AddOn ? Color.Warning : Color.Info)">
+                        @context.Origem
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    <MudSwitch T="bool" Value="context.Ativo" Color="Color.Success"
+                               ValueChanged="(val) => ToggleModulo(context.Codigo, val)" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private bool _carregando = true;
+    private ConfiguracaoModulosEmpresaDto? _config;
+
+    protected override async Task OnInitializedAsync() => await Carregar();
+
+    private async Task Carregar()
+    {
+        _carregando = true;
+        var res = await Mediator.Send(new GetModulosEmpresaQuery());
+        if (res.Sucesso)
+            _config = res.Dados;
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+        _carregando = false;
+    }
+
+    private async Task AplicarPlano(PlanoLicenca plano)
+    {
+        var res = await Mediator.Send(new AplicarPlanoEmpresaCommand(plano));
+        if (res.Sucesso)
+        {
+            Snackbar.Add($"Plano {plano} aplicado com sucesso!", Severity.Success);
+            await Carregar();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ToggleModulo(string codigo, bool ativo)
+    {
+        var res = await Mediator.Send(new ToggleModuloEmpresaCommand(codigo, ativo));
+        if (res.Sucesso)
+        {
+            Snackbar.Add($"Módulo '{codigo}' {(ativo ? "ativado" : "desativado")}.", Severity.Success);
+            await Carregar();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

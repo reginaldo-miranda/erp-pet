@@ -27,6 +27,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     // Fase 1 - Base
     public DbSet<Empresa> Empresas => Set<Empresa>();
+    public DbSet<ModuloSistema> ModulosSistema => Set<ModuloSistema>();
+    public DbSet<EmpresaModulo> EmpresaModulos => Set<EmpresaModulo>();
     public DbSet<UsuarioEmpresa> UsuarioEmpresas => Set<UsuarioEmpresa>();
     public DbSet<Permissao> Permissoes => Set<Permissao>();
     public DbSet<PapelPermissao> PapelPermissoes => Set<PapelPermissao>();
@@ -123,6 +125,43 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<ERP.Domain.Core.Entities.Pdv.VendaPdv> VendasPdv => Set<ERP.Domain.Core.Entities.Pdv.VendaPdv>();
     public DbSet<ERP.Domain.Core.Entities.Pdv.VendaPdvItem> VendaPdvItens => Set<ERP.Domain.Core.Entities.Pdv.VendaPdvItem>();
     public DbSet<ERP.Domain.Core.Entities.Pdv.VendaPdvPagamento> VendaPdvPagamentos => Set<ERP.Domain.Core.Entities.Pdv.VendaPdvPagamento>();
+
+    // ERP Pet - Onda 1
+    public DbSet<ERP.Domain.Core.Entities.Pet.Pet> Pets => Set<ERP.Domain.Core.Entities.Pet.Pet>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.TutorPet> TutorPets => Set<ERP.Domain.Core.Entities.Pet.TutorPet>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ConvenioPet> ConveniosPet => Set<ERP.Domain.Core.Entities.Pet.ConvenioPet>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ComandaAtendimento> ComandasAtendimento => Set<ERP.Domain.Core.Entities.Pet.ComandaAtendimento>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ComandaItem> ComandaItens => Set<ERP.Domain.Core.Entities.Pet.ComandaItem>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.AberturaSacoGranel> AberturasSacoGranel => Set<ERP.Domain.Core.Entities.Pet.AberturaSacoGranel>();
+
+    // ERP Pet - Onda 2 (Banho & Tosa)
+    public DbSet<ERP.Domain.Core.Entities.Pet.TabelaPrecoBanho> TabelasPrecoBanho => Set<ERP.Domain.Core.Entities.Pet.TabelaPrecoBanho>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.RecursoBanhoTosa> RecursosBanhoTosa => Set<ERP.Domain.Core.Entities.Pet.RecursoBanhoTosa>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.PacoteBanhoPet> PacotesBanhoPet => Set<ERP.Domain.Core.Entities.Pet.PacoteBanhoPet>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa> AtendimentosBanhoTosa => Set<ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ComissaoBanhoTosa> ComissoesBanhoTosa => Set<ERP.Domain.Core.Entities.Pet.ComissaoBanhoTosa>();
+
+    // ERP Pet - Onda 3 (Hospital - Ambulatório & Vacinas)
+    public DbSet<ERP.Domain.Core.Entities.Pet.Veterinario> Veterinarios => Set<ERP.Domain.Core.Entities.Pet.Veterinario>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ConsultaVeterinaria> ConsultasVeterinarias => Set<ERP.Domain.Core.Entities.Pet.ConsultaVeterinaria>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria> ReceitasVeterinarias => Set<ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ReceitaVeterinariaItem> ReceitaVeterinariaItens => Set<ERP.Domain.Core.Entities.Pet.ReceitaVeterinariaItem>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.VacinacaoVermifugoPet> VacinacoesVermifugosPet => Set<ERP.Domain.Core.Entities.Pet.VacinacaoVermifugoPet>();
+
+    // ERP Pet - Onda 4 (Internação 24h, Centro Cirúrgico, Termos & Exames HL7/LIS)
+    public DbSet<ERP.Domain.Core.Entities.Pet.BaiaInternacao> BaiasInternacao => Set<ERP.Domain.Core.Entities.Pet.BaiaInternacao>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.InternacaoPet> InternacoesPet => Set<ERP.Domain.Core.Entities.Pet.InternacaoPet>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.PrescricaoInternacao> PrescricoesInternacao => Set<ERP.Domain.Core.Entities.Pet.PrescricaoInternacao>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ChecagemEnfermagem> ChecagensEnfermagem => Set<ERP.Domain.Core.Entities.Pet.ChecagemEnfermagem>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.EvolucaoInternacao> EvolucoesInternacao => Set<ERP.Domain.Core.Entities.Pet.EvolucaoInternacao>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.CirurgiaVeterinaria> CirurgiasVeterinarias => Set<ERP.Domain.Core.Entities.Pet.CirurgiaVeterinaria>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.TermoConsentimentoPet> TermosConsentimentoPet => Set<ERP.Domain.Core.Entities.Pet.TermoConsentimentoPet>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.ExameVeterinario> ExamesVeterinarios => Set<ERP.Domain.Core.Entities.Pet.ExameVeterinario>();
+
+    // ERP Pet - Onda 5 (WhatsApp & Portal do Tutor)
+    public DbSet<ERP.Domain.Core.Entities.Pet.ConfiguracaoWhatsAppEmpresa> ConfiguracoesWhatsAppEmpresa => Set<ERP.Domain.Core.Entities.Pet.ConfiguracaoWhatsAppEmpresa>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.NotificacaoWhatsAppOutbox> NotificacoesWhatsAppOutbox => Set<ERP.Domain.Core.Entities.Pet.NotificacaoWhatsAppOutbox>();
+    public DbSet<ERP.Domain.Core.Entities.Pet.AcessoPortalTutor> AcessosPortalTutor => Set<ERP.Domain.Core.Entities.Pet.AcessoPortalTutor>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -1,0 +1,198 @@
+@page "/pet/portal-tutor"
+@page "/portal-tutor/{Token}"
+@using ERP.Application.Common.Interfaces
+@using ERP.Application.Pet.BanhoTosa
+@using ERP.Application.Pet.CirurgiaExames
+@using ERP.Application.Pet.TutorPortal
+@using MediatR
+@using Microsoft.EntityFrameworkCore
+@inject IMediator Mediator
+@inject IApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>Portal do Tutor - ERP Pet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Portal Web do Tutor &amp; Agendamento Online</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Consulte carteira de vacinas, laudos de exames, boletim de internação, assine termos e realize agendamentos online.
+    </MudText>
+
+    @if (string.IsNullOrWhiteSpace(Token))
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudGrid AlignItems="Center">
+                <MudItem xs="12" md="5">
+                    <MudSelect T="int" @bind-Value="_clienteId" Label="Selecionar Tutor" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var c in _clientes) { <MudSelectItem Value="c.Id">@c.Nome</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CarregarPortalTutor">Visualizar Portal</MudButton>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="GerarLink">Gerar Token de Acesso</MudButton>
+                    @if (!string.IsNullOrWhiteSpace(_tokenGerado))
+                    {
+                        <MudChip T="string" Color="Color.Success" Class="ml-2">Token: @_tokenGerado</MudChip>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    @if (_dados != null)
+    {
+        <MudText Typo="Typo.h5" Class="mb-3">Olá, @_dados.NomeTutor!</MudText>
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+            <MudTabPanel Text="@($"Meus Pets ({_dados.Pets.Count})")">
+                <MudTable Items="_dados.Pets" Hover="true">
+                    <HeaderContent><MudTh>Nome</MudTh><MudTh>Espécie</MudTh><MudTh>Raça</MudTh><MudTh>Peso</MudTh></HeaderContent>
+                    <RowTemplate>
+                        <MudTd><strong>@context.Nome</strong></MudTd><MudTd>@context.Especie</MudTd>
+                        <MudTd>@(context.Raca ?? "SRD")</MudTd><MudTd>@(context.PesoAtualKg?.ToString("N2") ?? "-") kg</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Vacinas ({_dados.Vacinas.Count})")">
+                <MudTable Items="_dados.Vacinas" Hover="true">
+                    <HeaderContent><MudTh>Pet</MudTh><MudTh>Vacina / Preventivo</MudTh><MudTh>Aplicação</MudTh><MudTh>Próximo Reforço</MudTh></HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.NomePet</MudTd><MudTd>@context.NomeProduto</MudTd>
+                        <MudTd>@context.DataAplicacao.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+                        <MudTd>@(context.ProximaAplicacao?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Exames ({_dados.Exames.Count})")">
+                <MudTable Items="_dados.Exames" Hover="true">
+                    <HeaderContent><MudTh>Pet</MudTh><MudTh>Exame</MudTh><MudTh>Status</MudTh><MudTh>Resultado</MudTh></HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.NomePet</MudTd><MudTd>@context.NomeExame</MudTd>
+                        <MudTd>@context.Status</MudTd><MudTd>@(context.ResultadoTexto ?? "Aguardando")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Boletim Internação ({_dados.BoletinsInternacao.Count})")">
+                <MudTable Items="_dados.BoletinsInternacao" Hover="true">
+                    <HeaderContent><MudTh>Pet</MudTh><MudTh>Data/Hora</MudTh><MudTh>Turno</MudTh><MudTh>Boletim</MudTh></HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.NomePet</MudTd><MudTd>@context.DataHora.ToLocalTime().ToString("dd/MM HH:mm")</MudTd>
+                        <MudTd>@context.Turno</MudTd><MudTd>@context.DescricaoEvolucao</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="@($"Termos ({_dados.Termos.Count})")">
+                <MudTable Items="_dados.Termos" Hover="true">
+                    <HeaderContent><MudTh>Pet</MudTh><MudTh>Termo</MudTh><MudTh>Status</MudTh><MudTh>Ação</MudTh></HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.NomePet</MudTd><MudTd>@context.Titulo</MudTd>
+                        <MudTd>@(context.Assinado ? "Assinado" : "Pendente")</MudTd>
+                        <MudTd>
+                            @if (!context.Assinado)
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Success" OnClick="() => AssinarTermo(context.Id)">Assinar</MudButton>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Agendamento Online (Banho & Tosa)">
+                <MudGrid AlignItems="Center">
+                    <MudItem xs="12" md="4">
+                        <MudSelect T="int" @bind-Value="_petAgendaId" Label="Selecione o Pet" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var p in _dados.Pets) { <MudSelectItem Value="p.Id">@p.Nome</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudDatePicker @bind-Date="_dataAgenda" Label="Data Desejada" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SolicitarAgendamento">Solicitar Banho &amp; Tosa</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+        </MudTabs>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public string? Token { get; set; }
+
+    private List<ERP.Domain.Core.Entities.Cadastros.Cliente> _clientes = new();
+    private int _clienteId;
+    private string? _tokenGerado;
+    private DadosPortalTutorDto? _dados;
+    private int _petAgendaId;
+    private DateTime? _dataAgenda = DateTime.Today.AddDays(1);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Token))
+        {
+            await CarregarPorToken(Token);
+            return;
+        }
+
+        _clientes = await DbContext.Clientes.AsNoTracking().OrderBy(c => c.Nome).Take(200).ToListAsync();
+        if (_clientes.Count > 0)
+        {
+            _clienteId = _clientes[0].Id;
+            await CarregarPortalTutor();
+        }
+    }
+
+    private async Task CarregarPortalTutor()
+    {
+        if (_clienteId <= 0) return;
+        var res = await Mediator.Send(new GetDadosPortalTutorQuery(_clienteId, null));
+        if (res.Sucesso && res.Dados != null)
+        {
+            _dados = res.Dados;
+            if (_dados.Pets.Count > 0) _petAgendaId = _dados.Pets[0].Id;
+        }
+    }
+
+    private async Task CarregarPorToken(string token)
+    {
+        var res = await Mediator.Send(new GetDadosPortalTutorQuery(null, token));
+        if (res.Sucesso && res.Dados != null)
+        {
+            _dados = res.Dados;
+            if (_dados.Pets.Count > 0) _petAgendaId = _dados.Pets[0].Id;
+        }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task GerarLink()
+    {
+        var res = await Mediator.Send(new GerarAcessoPortalTutorCommand(_clienteId));
+        if (res.Sucesso) _tokenGerado = res.Dados;
+    }
+
+    private async Task AssinarTermo(int termoId)
+    {
+        if (_dados == null) return;
+        var res = await Mediator.Send(new AssinarTermoConsentimentoCommand(termoId, _dados.NomeTutor));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Termo assinado!", Severity.Success);
+            if (!string.IsNullOrWhiteSpace(Token)) await CarregarPorToken(Token);
+            else await CarregarPortalTutor();
+        }
+    }
+
+    private async Task SolicitarAgendamento()
+    {
+        if (_dados == null || _petAgendaId <= 0) return;
+        var data = (_dataAgenda ?? DateTime.Today.AddDays(1)).Date.AddHours(10);
+        var res = await Mediator.Send(new AgendarBanhoCommand(_petAgendaId, _dados.ClienteId, null, null, null, null, null, null, data));
+        if (res.Sucesso) Snackbar.Add("Agendamento online confirmado para 10:00!", Severity.Success);
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

@@ -11,6 +11,8 @@ public interface IApplicationDbContext
 {
     // Fase 1 - Base
     DbSet<Empresa> Empresas { get; }
+    DbSet<ModuloSistema> ModulosSistema { get; }
+    DbSet<EmpresaModulo> EmpresaModulos { get; }
     DbSet<UsuarioEmpresa> UsuarioEmpresas { get; }
     DbSet<Permissao> Permissoes { get; }
     DbSet<PapelPermissao> PapelPermissoes { get; }
@@ -107,6 +109,43 @@ public interface IApplicationDbContext
     DbSet<ERP.Domain.Core.Entities.Pdv.VendaPdv> VendasPdv { get; }
     DbSet<ERP.Domain.Core.Entities.Pdv.VendaPdvItem> VendaPdvItens { get; }
     DbSet<ERP.Domain.Core.Entities.Pdv.VendaPdvPagamento> VendaPdvPagamentos { get; }
+
+    // ERP Pet - Onda 1 (Núcleo Pet, Granel, Comanda Unificada e Convênios)
+    DbSet<ERP.Domain.Core.Entities.Pet.Pet> Pets { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.TutorPet> TutorPets { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ConvenioPet> ConveniosPet { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ComandaAtendimento> ComandasAtendimento { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ComandaItem> ComandaItens { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.AberturaSacoGranel> AberturasSacoGranel { get; }
+
+    // ERP Pet - Onda 2 (Banho & Tosa)
+    DbSet<ERP.Domain.Core.Entities.Pet.TabelaPrecoBanho> TabelasPrecoBanho { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.RecursoBanhoTosa> RecursosBanhoTosa { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.PacoteBanhoPet> PacotesBanhoPet { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa> AtendimentosBanhoTosa { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ComissaoBanhoTosa> ComissoesBanhoTosa { get; }
+
+    // ERP Pet - Onda 3 (Hospital - Ambulatório & Vacinas)
+    DbSet<ERP.Domain.Core.Entities.Pet.Veterinario> Veterinarios { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ConsultaVeterinaria> ConsultasVeterinarias { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria> ReceitasVeterinarias { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ReceitaVeterinariaItem> ReceitaVeterinariaItens { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.VacinacaoVermifugoPet> VacinacoesVermifugosPet { get; }
+
+    // ERP Pet - Onda 4 (Internação 24h, Centro Cirúrgico, Termos & Exames HL7/LIS)
+    DbSet<ERP.Domain.Core.Entities.Pet.BaiaInternacao> BaiasInternacao { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.InternacaoPet> InternacoesPet { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.PrescricaoInternacao> PrescricoesInternacao { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ChecagemEnfermagem> ChecagensEnfermagem { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.EvolucaoInternacao> EvolucoesInternacao { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.CirurgiaVeterinaria> CirurgiasVeterinarias { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.TermoConsentimentoPet> TermosConsentimentoPet { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.ExameVeterinario> ExamesVeterinarios { get; }
+
+    // ERP Pet - Onda 5 (WhatsApp & Portal do Tutor)
+    DbSet<ERP.Domain.Core.Entities.Pet.ConfiguracaoWhatsAppEmpresa> ConfiguracoesWhatsAppEmpresa { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.NotificacaoWhatsAppOutbox> NotificacoesWhatsAppOutbox { get; }
+    DbSet<ERP.Domain.Core.Entities.Pet.AcessoPortalTutor> AcessosPortalTutor { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

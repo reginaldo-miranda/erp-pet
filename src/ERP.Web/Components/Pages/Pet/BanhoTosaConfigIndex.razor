@@ -1,0 +1,193 @@
+@page "/pet/banho-tosa/pacotes"
+@using ERP.Application.Common.Interfaces
+@using ERP.Application.Pet.BanhoTosa
+@using ERP.Domain.Core.Enums
+@using MediatR
+@using Microsoft.EntityFrameworkCore
+@inject IMediator Mediator
+@inject IApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>Pacotes, Preços &amp; Comissões B&amp;T</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Banho &amp; Tosa — Preços Porte/Pelagem, Boxes, Pacotes &amp; Comissões</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+        <MudTabPanel Text="Tabela Porte x Pelagem">
+            <MudGrid Class="mb-4" AlignItems="Center">
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_nomeServico" Label="Serviço (ex: Banho Completo)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    <MudSelect T="PortePet" @bind-Value="_porte" Label="Porte" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var p in Enum.GetValues<PortePet>()) { <MudSelectItem Value="p">@p</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    <MudSelect T="TipoPelagemPet" @bind-Value="_pelagem" Label="Pelagem" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var p in Enum.GetValues<TipoPelagemPet>()) { <MudSelectItem Value="p">@p</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    <MudNumericField T="decimal" @bind-Value="_valorTabela" Label="Valor (R$)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6" md="1">
+                    <MudNumericField T="int" @bind-Value="_duracao" Label="Min" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarTabela">Adicionar</MudButton>
+                </MudItem>
+            </MudGrid>
+            <MudTable Items="_tabelas" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Serviço</MudTh><MudTh>Porte</MudTh><MudTh>Pelagem</MudTh><MudTh>Valor</MudTh><MudTh>Duração</MudTh><MudTh>% Banho / % Tosa</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.NomeServico</MudTd>
+                    <MudTd>@context.Porte</MudTd>
+                    <MudTd>@context.TipoPelagem</MudTd>
+                    <MudTd>@context.Valor.ToString("C2")</MudTd>
+                    <MudTd>@context.DuracaoMinutos min</MudTd>
+                    <MudTd>@context.ComissaoBanhoPercentual% / @context.ComissaoTosaPercentual%</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Boxes / Banheiras">
+            <MudGrid Class="mb-4" AlignItems="Center">
+                <MudItem xs="12" md="5">
+                    <MudTextField @bind-Value="_nomeRecurso" Label="Nome (ex: Banheira 01)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="TipoRecursoBanho" @bind-Value="_tipoRecurso" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var t in Enum.GetValues<TipoRecursoBanho>()) { <MudSelectItem Value="t">@t</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarRecurso">Cadastrar Box</MudButton>
+                </MudItem>
+            </MudGrid>
+            <MudTable Items="_recursos" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Nome</MudTh><MudTh>Tipo</MudTh></HeaderContent>
+                <RowTemplate><MudTd>@context.Nome</MudTd><MudTd>@context.Tipo</MudTd></RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Pacotes de Banho">
+            <MudGrid Class="mb-4" AlignItems="Center">
+                <MudItem xs="12" md="3">
+                    <MudSelect T="int" @bind-Value="_clientePacoteId" Label="Tutor *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var c in _clientes) { <MudSelectItem Value="c.Id">@c.Nome</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_nomePacote" Label="Nome do Pacote" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    <MudNumericField T="int" @bind-Value="_totalSessoes" Label="Sessões" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    <MudNumericField T="decimal" @bind-Value="_valorPacote" Label="Valor Total" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarPacote">Criar Pacote</MudButton>
+                </MudItem>
+            </MudGrid>
+            <MudTable Items="_pacotes" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Pacote</MudTh><MudTh>Tutor</MudTh><MudTh>Saldo</MudTh><MudTh>Valor</MudTh><MudTh>Validade</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.NomePacote</MudTd>
+                    <MudTd>@context.NomeTutor</MudTd>
+                    <MudTd><strong>@context.SessoesDisponiveis / @context.TotalSessoes</strong></MudTd>
+                    <MudTd>@context.ValorTotal.ToString("C2")</MudTd>
+                    <MudTd>@context.DataValidade.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Comissões por Etapa">
+            <MudTable Items="_comissoes" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Atendimento</MudTh><MudTh>Pet</MudTh><MudTh>Profissional</MudTh><MudTh>Etapa</MudTh><MudTh>Base</MudTh><MudTh>%</MudTh><MudTh>Comissão</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.NumeroAtendimento</MudTd>
+                    <MudTd>@context.NomePet</MudTd>
+                    <MudTd><strong>@context.ProfissionalNome</strong></MudTd>
+                    <MudTd>@context.Etapa</MudTd>
+                    <MudTd>@context.BaseCalculo.ToString("C2")</MudTd>
+                    <MudTd>@context.Percentual%</MudTd>
+                    <MudTd><strong>@context.ValorComissao.ToString("C2")</strong></MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<TabelaPrecoBanhoDto> _tabelas = new();
+    private List<RecursoBanhoDto> _recursos = new();
+    private List<PacoteBanhoDto> _pacotes = new();
+    private List<ComissaoBanhoDto> _comissoes = new();
+    private List<ERP.Domain.Core.Entities.Cadastros.Cliente> _clientes = new();
+
+    private string _nomeServico = "Banho Completo";
+    private PortePet _porte = PortePet.M;
+    private TipoPelagemPet _pelagem = TipoPelagemPet.Curta;
+    private decimal _valorTabela = 75m;
+    private int _duracao = 60;
+
+    private string _nomeRecurso = string.Empty;
+    private TipoRecursoBanho _tipoRecurso = TipoRecursoBanho.Banheira;
+
+    private int _clientePacoteId;
+    private string _nomePacote = "Pacote 4 Banhos Mensal";
+    private int _totalSessoes = 4;
+    private decimal _valorPacote = 260m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = await DbContext.Clientes.AsNoTracking().OrderBy(c => c.Nome).Take(200).ToListAsync();
+        if (_clientes.Count > 0) _clientePacoteId = _clientes[0].Id;
+        await CarregarTudo();
+    }
+
+    private async Task CarregarTudo()
+    {
+        var t = await Mediator.Send(new GetTabelasPrecoBanhoQuery());
+        if (t.Sucesso && t.Dados != null) _tabelas = t.Dados;
+
+        var r = await Mediator.Send(new GetRecursosBanhoQuery());
+        if (r.Sucesso && r.Dados != null) _recursos = r.Dados;
+
+        var p = await Mediator.Send(new GetPacotesBanhoQuery());
+        if (p.Sucesso && p.Dados != null) _pacotes = p.Dados;
+
+        var c = await Mediator.Send(new GetComissoesBanhoQuery());
+        if (c.Sucesso && c.Dados != null) _comissoes = c.Dados;
+    }
+
+    private async Task SalvarTabela()
+    {
+        var res = await Mediator.Send(new CreateTabelaPrecoBanhoCommand(_nomeServico, _porte, _pelagem, _valorTabela, _duracao, 20m, 30m));
+        if (res.Sucesso) { Snackbar.Add("Preço salvo!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task SalvarRecurso()
+    {
+        var res = await Mediator.Send(new CreateRecursoBanhoCommand(_nomeRecurso, _tipoRecurso));
+        if (res.Sucesso) { Snackbar.Add("Box cadastrado!", Severity.Success); _nomeRecurso = string.Empty; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task SalvarPacote()
+    {
+        var res = await Mediator.Send(new CreatePacoteBanhoCommand(_clientePacoteId, null, _nomePacote, _totalSessoes, _valorPacote, 30, null));
+        if (res.Sucesso) { Snackbar.Add("Pacote criado!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

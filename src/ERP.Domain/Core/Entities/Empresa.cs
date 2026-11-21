@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Core.Enums;
 
 namespace ERP.Domain.Core.Entities;
 
@@ -30,7 +31,9 @@ public class Empresa : BaseAuditableEntity, IAggregateRoot
     public string? RegimeTributario { get; set; }
     public string? MetodoCusteio { get; set; } // CustoMedio, PEPS
     public string? LogoUrl { get; set; }
+    public PlanoLicenca PlanoLicenca { get; set; } = PlanoLicenca.Grande;
 
     // Navegação
     public ICollection<UsuarioEmpresa> UsuarioEmpresas { get; set; } = new List<UsuarioEmpresa>();
+    public ICollection<EmpresaModulo> Modulos { get; set; } = new List<EmpresaModulo>();
 }

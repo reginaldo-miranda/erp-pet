@@ -1,0 +1,294 @@
+@page "/pet/vet/ambulatorio"
+@using ERP.Application.Pet.Ambulatorio
+@using ERP.Application.Pet.Comandas
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>Ambulatório Veterinário &amp; Prontuário SOAP</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Hospital Veterinário — Ambulatório, Triagem, SOAP &amp; Receituário</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+        <MudTabPanel Text="Agenda & Consultas">
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.h6" Class="mb-3">Agendar Consulta</MudText>
+                <MudGrid AlignItems="Center">
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense" ValueChanged="OnPetChanged">
+                            @foreach (var p in _pets) { <MudSelectItem Value="p.Id">@p.Nome (@p.Especie)</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" @bind-Value="_vetId" Label="Veterinário *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var v in _vets) { <MudSelectItem Value="v.Id">@v.Nome (CRMV @v.Crmv)</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="TipoConsultaVet" @bind-Value="_tipoConsulta" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var t in Enum.GetValues<TipoConsultaVet>()) { <MudSelectItem Value="t">@t</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="int?" @bind-Value="_comandaId" Label="Comanda" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            @foreach (var c in _comandasAbertas) { <MudSelectItem T="int?" Value="c.Id">@c.Numero</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AgendarConsulta">Agendar</MudButton>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_queixa" Label="Queixa Principal" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (_consultaAtiva != null)
+            {
+                <MudPaper Class="pa-4 mb-4" Elevation="3">
+                    <MudText Typo="Typo.h6" Class="mb-2">Atendimento: @_consultaAtiva.Numero — @_consultaAtiva.NomePet</MudText>
+                    <MudGrid>
+                        <MudItem xs="6" md="2"><MudNumericField T="decimal?" @bind-Value="_pesoTriagem" Label="Peso (kg)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                        <MudItem xs="6" md="2"><MudNumericField T="decimal?" @bind-Value="_tempTriagem" Label="Temp (°C)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                        <MudItem xs="6" md="2"><MudNumericField T="int?" @bind-Value="_fcTriagem" Label="FC (bpm)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                        <MudItem xs="6" md="2"><MudNumericField T="int?" @bind-Value="_frTriagem" Label="FR (mpm)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                        <MudItem xs="12" md="2"><MudTextField @bind-Value="_mucosas" Label="Mucosas" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                        <MudItem xs="12" md="2" Class="d-flex align-center">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="SalvarTriagem">Salvar Triagem</MudButton>
+                        </MudItem>
+
+                        <MudItem xs="12" md="6"><MudTextField @bind-Value="_soapS" Label="S — Subjetivo (Anamnese)" Lines="2" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="12" md="6"><MudTextField @bind-Value="_soapO" Label="O — Objetivo (Exame Físico)" Lines="2" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="12" md="6"><MudTextField @bind-Value="_soapA" Label="A — Avaliação (Diagnóstico)" Lines="2" Variant="Variant.Outlined" /></MudItem>
+                        <MudItem xs="12" md="6"><MudTextField @bind-Value="_soapP" Label="P — Plano (Conduta)" Lines="2" Variant="Variant.Outlined" /></MudItem>
+
+                        <MudItem xs="12" Class="d-flex justify-end gap-2">
+                            <MudButton Variant="Variant.Text" OnClick="() => _consultaAtiva = null">Fechar</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="FinalizarSoap">Finalizar Prontuário SOAP</MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            }
+
+            <MudTable Items="_consultas" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>Número</MudTh><MudTh>Data/Hora</MudTh><MudTh>Pet</MudTh><MudTh>Veterinário</MudTh><MudTh>Tipo</MudTh><MudTh>Status</MudTh><MudTh>Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd><strong>@context.Numero</strong></MudTd>
+                    <MudTd>@context.DataHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                    <MudTd>@context.NomePet (@context.NomeTutor)</MudTd>
+                    <MudTd>@context.NomeVeterinario (@context.Crmv)</MudTd>
+                    <MudTd>@context.Tipo</MudTd>
+                    <MudTd><MudChip T="string" Size="Size.Small" Color="Color.Info">@context.Status</MudChip></MudTd>
+                    <MudTd>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => AbrirProntuario(context)">
+                            Triagem / SOAP
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Receituário">
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.h6" Class="mb-3">Emitir Receita Veterinária</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" @bind-Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var p in _pets) { <MudSelectItem Value="p.Id">@p.Nome</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="int" @bind-Value="_vetId" Label="Veterinário *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var v in _vets) { <MudSelectItem Value="v.Id">@v.Nome</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="TipoReceitaVet" @bind-Value="_tipoReceita" Label="Tipo Receita" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var t in Enum.GetValues<TipoReceitaVet>()) { <MudSelectItem Value="t">@t</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudTextField @bind-Value="_medNome" Label="Medicamento *" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="_medPosologia" Label="Posologia *" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        <MudTextField @bind-Value="_medVia" Label="Via (Oral, Tópica...)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="6" md="3" Class="d-flex align-center">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="EmitirReceita">Emitir Receita</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <MudTable Items="_receitas" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Data</MudTh><MudTh>Pet</MudTh><MudTh>Veterinário</MudTh><MudTh>Tipo</MudTh><MudTh>Itens</MudTh></HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.DataEmissao.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd>@context.NomePet</MudTd>
+                    <MudTd>@context.NomeVeterinario (@context.Crmv)</MudTd>
+                    <MudTd>@context.Tipo</MudTd>
+                    <MudTd>@string.Join("; ", context.Itens.Select(i => $"{i.Medicamento} ({i.Posologia})"))</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Veterinários (CRMV)">
+            <MudGrid Class="mb-4" AlignItems="Center">
+                <MudItem xs="12" md="3"><MudTextField @bind-Value="_vetNome" Label="Nome *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="2"><MudTextField @bind-Value="_vetCrmv" Label="CRMV *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="1"><MudTextField @bind-Value="_vetUf" Label="UF *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="12" md="2"><MudTextField @bind-Value="_vetEsp" Label="Especialidade" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="2"><MudNumericField T="decimal" @bind-Value="_vetValor" Label="Valor Consulta" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="2"><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarVet">Cadastrar</MudButton></MudItem>
+            </MudGrid>
+            <MudTable Items="_vets" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Nome</MudTh><MudTh>CRMV</MudTh><MudTh>Especialidade</MudTh><MudTh>Valor Consulta</MudTh></HeaderContent>
+                <RowTemplate>
+                    <MudTd><strong>@context.Nome</strong></MudTd>
+                    <MudTd>@context.Crmv/@context.UfCrmv</MudTd>
+                    <MudTd>@(context.Especialidade ?? "Clínica Geral")</MudTd>
+                    <MudTd>@context.ValorConsultaPadrao.ToString("C2")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<VeterinarioDto> _vets = new();
+    private List<ConsultaVetDto> _consultas = new();
+    private List<ReceitaVetDto> _receitas = new();
+    private List<PetDto> _pets = new();
+    private List<ComandaAtendimentoDto> _comandasAbertas = new();
+
+    private int _petId;
+    private int _clienteId;
+    private int _vetId;
+    private int? _comandaId;
+    private TipoConsultaVet _tipoConsulta = TipoConsultaVet.ConsultaGeral;
+    private string? _queixa;
+
+    private ConsultaVetDto? _consultaAtiva;
+    private decimal? _pesoTriagem;
+    private decimal? _tempTriagem;
+    private int? _fcTriagem;
+    private int? _frTriagem;
+    private string? _mucosas;
+    private string? _soapS;
+    private string? _soapO;
+    private string? _soapA;
+    private string? _soapP;
+
+    private TipoReceitaVet _tipoReceita = TipoReceitaVet.Simples;
+    private string _medNome = string.Empty;
+    private string _medPosologia = string.Empty;
+    private string? _medVia = "Oral";
+
+    private string _vetNome = string.Empty;
+    private string _vetCrmv = string.Empty;
+    private string _vetUf = "SP";
+    private string? _vetEsp;
+    private decimal _vetValor = 150m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var pRes = await Mediator.Send(new GetPetsQuery());
+        if (pRes.Sucesso && pRes.Dados != null)
+        {
+            _pets = pRes.Dados;
+            if (_pets.Count > 0) OnPetChanged(_pets[0].Id);
+        }
+
+        var cRes = await Mediator.Send(new GetComandasQuery(StatusComanda.Aberta));
+        if (cRes.Sucesso && cRes.Dados != null) _comandasAbertas = cRes.Dados;
+
+        await CarregarTudo();
+    }
+
+    private void OnPetChanged(int petId)
+    {
+        _petId = petId;
+        _clienteId = _pets.FirstOrDefault(p => p.Id == petId)?.Tutores.FirstOrDefault()?.ClienteId ?? 0;
+    }
+
+    private async Task CarregarTudo()
+    {
+        var v = await Mediator.Send(new GetVeterinariosQuery());
+        if (v.Sucesso && v.Dados != null)
+        {
+            _vets = v.Dados;
+            if (_vetId == 0 && _vets.Count > 0) _vetId = _vets[0].Id;
+        }
+        var cs = await Mediator.Send(new GetConsultasVetQuery());
+        if (cs.Sucesso && cs.Dados != null) _consultas = cs.Dados;
+
+        var rc = await Mediator.Send(new GetReceitasPetQuery());
+        if (rc.Sucesso && rc.Dados != null) _receitas = rc.Dados;
+    }
+
+    private async Task AgendarConsulta()
+    {
+        if (_petId <= 0 || _vetId <= 0) { Snackbar.Add("Selecione Pet e Veterinário.", Severity.Warning); return; }
+        var res = await Mediator.Send(new AgendarConsultaVetCommand(_petId, _clienteId, _vetId, _comandaId, DateTime.Now, _tipoConsulta, _queixa));
+        if (res.Sucesso) { Snackbar.Add("Consulta agendada!", Severity.Success); _queixa = null; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private void AbrirProntuario(ConsultaVetDto c)
+    {
+        _consultaAtiva = c;
+        _pesoTriagem = c.PesoKg;
+        _tempTriagem = c.TemperaturaC;
+        _fcTriagem = c.FrequenciaCardiacaBpm;
+        _frTriagem = c.FrequenciaRespiratoriaMpm;
+        _mucosas = c.Mucosas;
+        _soapS = c.SoapSubjetivo;
+        _soapO = c.SoapObjetivo;
+        _soapA = c.SoapAvaliacao;
+        _soapP = c.SoapPlano;
+    }
+
+    private async Task SalvarTriagem()
+    {
+        if (_consultaAtiva == null) return;
+        var res = await Mediator.Send(new RegistrarTriagemVetCommand(_consultaAtiva.Id, null, _pesoTriagem, _tempTriagem, _fcTriagem, _frTriagem, _mucosas, null));
+        if (res.Sucesso) { Snackbar.Add("Triagem registrada e peso atualizado no Pet!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task FinalizarSoap()
+    {
+        if (_consultaAtiva == null) return;
+        var res = await Mediator.Send(new FinalizarProntuarioSoapCommand(_consultaAtiva.Id, _soapS, _soapO, _soapA, _soapP));
+        if (res.Sucesso) { Snackbar.Add("Prontuário SOAP finalizado!", Severity.Success); _consultaAtiva = null; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task EmitirReceita()
+    {
+        if (string.IsNullOrWhiteSpace(_medNome) || string.IsNullOrWhiteSpace(_medPosologia))
+        {
+            Snackbar.Add("Informe medicamento e posologia.", Severity.Warning);
+            return;
+        }
+        var res = await Mediator.Send(new EmitirReceitaVetCommand(
+            _consultaAtiva?.Id, _petId, _vetId, _tipoReceita, null,
+            new List<ReceitaItemInput> { new(_medNome, null, null, _medPosologia, _medVia, null, null) }));
+        if (res.Sucesso) { Snackbar.Add("Receita emitida!", Severity.Success); _medNome = ""; _medPosologia = ""; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task SalvarVet()
+    {
+        var res = await Mediator.Send(new CreateVeterinarioCommand(_vetNome, _vetCrmv, _vetUf, _vetEsp, null, null, _vetValor));
+        if (res.Sucesso) { Snackbar.Add("Veterinário cadastrado!", Severity.Success); _vetNome = ""; _vetCrmv = ""; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

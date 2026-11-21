@@ -22,4 +22,5 @@ public class Cliente : BaseEmpresaEntity, IAggregateRoot
 
     // Navegação
     public ICollection<Endereco> Enderecos { get; set; } = new List<Endereco>();
+    public ICollection<ERP.Domain.Core.Entities.Pet.TutorPet> PetsVinculados { get; set; } = new List<ERP.Domain.Core.Entities.Pet.TutorPet>();
 }

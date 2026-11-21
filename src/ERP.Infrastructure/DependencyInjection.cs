@@ -77,6 +77,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ICurrentEmpresaService, CurrentEmpresaService>();
+        services.AddScoped<IModuloService, ModuloService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IOfxParserService, OfxParserService>();
@@ -95,6 +96,10 @@ public static class DependencyInjection
         services.AddHttpClient<IWebImageSearchService, WebImageSearchService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddHttpClient<IWhatsAppSenderService, WhatsAppSenderService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
         });
 
         return services;

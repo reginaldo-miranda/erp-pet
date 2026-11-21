@@ -1,0 +1,183 @@
+@page "/pet/vet/cirurgias"
+@using ERP.Application.Pet.Ambulatorio
+@using ERP.Application.Pet.CirurgiaExames
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>Centro Cirúrgico, Termos &amp; Exames HL7/LIS</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Centro Cirúrgico, Termos de Consentimento &amp; Exames (HL7/LIS)</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+        <MudTabPanel Text="Cirurgias & Anestesia">
+            <MudGrid Class="mb-4" AlignItems="Center">
+                <MudItem xs="12" md="3">
+                    <MudSelect T="int" Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense" ValueChanged="OnPetChanged">
+                        @foreach (var p in _pets) { <MudSelectItem Value="p.Id">@p.Nome</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="int" @bind-Value="_vetId" Label="Cirurgião *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var v in _vets) { <MudSelectItem Value="v.Id">@v.Nome</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3"><MudTextField @bind-Value="_procedimento" Label="Procedimento *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="1"><MudTextField @bind-Value="_sala" Label="Sala" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="2"><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AgendarCirurgia">Agendar</MudButton></MudItem>
+            </MudGrid>
+
+            <MudTable Items="_cirurgias" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Número</MudTh><MudTh>Pet</MudTh><MudTh>Procedimento</MudTh><MudTh>Cirurgião</MudTh><MudTh>Sala</MudTh><MudTh>Status</MudTh></HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Numero</MudTd><MudTd>@context.NomePet</MudTd><MudTd>@context.Procedimento</MudTd>
+                    <MudTd>@context.NomeCirurgiao</MudTd><MudTd>@(context.SalaCirurgica ?? "-")</MudTd><MudTd>@context.Status</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Termos de Consentimento">
+            <MudGrid Class="mb-4" AlignItems="Center">
+                <MudItem xs="12" md="3">
+                    <MudSelect T="TipoTermoConsentimento" @bind-Value="_tipoTermo" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var t in Enum.GetValues<TipoTermoConsentimento>()) { <MudSelectItem Value="t">@t</MudSelectItem> }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6"><MudTextField @bind-Value="_tituloTermo" Label="Título do Termo" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="12" md="3"><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GerarTermo">Gerar Termo</MudButton></MudItem>
+            </MudGrid>
+
+            <MudTable Items="_termos" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Pet</MudTh><MudTh>Tutor</MudTh><MudTh>Tipo</MudTh><MudTh>Título</MudTh><MudTh>Status</MudTh><MudTh>Ação</MudTh></HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.NomePet</MudTd><MudTd>@context.NomeTutor</MudTd><MudTd>@context.Tipo</MudTd><MudTd>@context.Titulo</MudTd>
+                    <MudTd><MudChip T="string" Size="Size.Small" Color="@(context.Assinado ? Color.Success : Color.Warning)">@(context.Assinado ? $"Assinado ({context.AssinadoPorNome})" : "Pendente")</MudChip></MudTd>
+                    <MudTd>
+                        @if (!context.Assinado)
+                        {
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success" OnClick="() => AssinarTermo(context)">Assinar Agora</MudButton>
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Exames & Integração HL7/LIS">
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-3" Outlined="true">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Solicitar Exame</MudText>
+                        <MudGrid AlignItems="Center">
+                            <MudItem xs="6"><MudTextField @bind-Value="_nomeExame" Label="Exame (ex: Hemograma)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                            <MudItem xs="4"><MudTextField @bind-Value="_codigoAmostra" Label="Cód. Amostra LIS" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                            <MudItem xs="2"><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SolicitarExame">Solicitar</MudButton></MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-3" Outlined="true">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Receber Resultado HL7 v2 (LIS)</MudText>
+                        <MudTextField @bind-Value="_payloadHl7" Label="Mensagem HL7 (OBR|1|LIS-001 + OBX)" Lines="3" Variant="Variant.Outlined" />
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="mt-2" OnClick="ProcessarHl7">Processar HL7</MudButton>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="_exames" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Pet</MudTh><MudTh>Exame</MudTh><MudTh>Amostra LIS</MudTh><MudTh>Status</MudTh><MudTh>Resultado</MudTh></HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.NomePet</MudTd><MudTd>@context.NomeExame</MudTd><MudTd>@context.CodigoAmostraLis</MudTd>
+                    <MudTd>@context.Status</MudTd><MudTd>@(context.ResultadoTexto ?? "-")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<PetDto> _pets = new();
+    private List<VeterinarioDto> _vets = new();
+    private List<CirurgiaDto> _cirurgias = new();
+    private List<TermoDto> _termos = new();
+    private List<ExameDto> _exames = new();
+
+    private int _petId;
+    private int _clienteId;
+    private int _vetId;
+    private string _procedimento = string.Empty;
+    private string? _sala = "Centro Cirúrgico 01";
+
+    private TipoTermoConsentimento _tipoTermo = TipoTermoConsentimento.Cirurgia;
+    private string _tituloTermo = "Termo de Consentimento Cirúrgico e Anestésico";
+
+    private string _nomeExame = "Hemograma Completo";
+    private string _codigoAmostra = "LIS-001";
+    private string _payloadHl7 = "OBR|1|LIS-001||HEMO\nOBX|1|NM|WBC^Leucocitos||12.4|10^3/uL|6.0-17.0\nOBX|2|NM|RBC^Hemacias||6.8|10^6/uL|5.5-8.5";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var p = await Mediator.Send(new GetPetsQuery());
+        if (p.Sucesso && p.Dados != null) { _pets = p.Dados; if (_pets.Count > 0) OnPetChanged(_pets[0].Id); }
+
+        var v = await Mediator.Send(new GetVeterinariosQuery());
+        if (v.Sucesso && v.Dados != null) { _vets = v.Dados; if (_vets.Count > 0) _vetId = _vets[0].Id; }
+
+        await CarregarTudo();
+    }
+
+    private void OnPetChanged(int petId)
+    {
+        _petId = petId;
+        _clienteId = _pets.FirstOrDefault(p => p.Id == petId)?.Tutores.FirstOrDefault()?.ClienteId ?? 0;
+    }
+
+    private async Task CarregarTudo()
+    {
+        var c = await Mediator.Send(new GetCirurgiasQuery());
+        if (c.Sucesso && c.Dados != null) _cirurgias = c.Dados;
+
+        var t = await Mediator.Send(new GetTermosConsentimentoQuery());
+        if (t.Sucesso && t.Dados != null) _termos = t.Dados;
+
+        var e = await Mediator.Send(new GetExamesVetQuery());
+        if (e.Sucesso && e.Dados != null) _exames = e.Dados;
+    }
+
+    private async Task AgendarCirurgia()
+    {
+        var res = await Mediator.Send(new AgendarCirurgiaCommand(_petId, _clienteId, _vetId, null, _sala, _procedimento, DateTime.Now, null, 850m));
+        if (res.Sucesso) { Snackbar.Add("Cirurgia agendada!", Severity.Success); _procedimento = ""; await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task GerarTermo()
+    {
+        var res = await Mediator.Send(new CriarTermoConsentimentoCommand(_petId, _clienteId, _tipoTermo, _tituloTermo, "Autorizo a realização do procedimento veterinário indicado."));
+        if (res.Sucesso) { Snackbar.Add("Termo gerado!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task AssinarTermo(TermoDto termo)
+    {
+        var res = await Mediator.Send(new AssinarTermoConsentimentoCommand(termo.Id, termo.NomeTutor));
+        if (res.Sucesso) { Snackbar.Add("Termo assinado!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task SolicitarExame()
+    {
+        var res = await Mediator.Send(new SolicitarExameVetCommand(_petId, _vetId, TipoExameVet.Hematologia, _nomeExame, _codigoAmostra));
+        if (res.Sucesso) { Snackbar.Add("Exame solicitado!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ProcessarHl7()
+    {
+        var res = await Mediator.Send(new ProcessarPayloadHl7Command(_payloadHl7));
+        if (res.Sucesso) { Snackbar.Add(res.Dados ?? "HL7 integrado!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

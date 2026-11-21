@@ -17,7 +17,7 @@ namespace ERP.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.31")
+                .HasAnnotation("ProductVersion", "8.0.34")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -425,12 +425,18 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<string>("Descricao")
                         .HasColumnType("text");
 
+                    b.Property<int?>("DiasValidadeAposAbertura")
+                        .HasColumnType("integer");
+
                     b.Property<int>("EmpresaId")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("EstoqueMinimo")
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal?>("FatorConversaoGranel")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("ImagemUrl")
                         .HasColumnType("text");
@@ -444,6 +450,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<bool>("PermiteFracionamento")
+                        .HasColumnType("boolean");
+
                     b.Property<decimal>("PrecoCusto")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
@@ -451,6 +460,9 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal>("PrecoVenda")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
+
+                    b.Property<int?>("ProdutoOrigemGranelId")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UnidadeMedidaId")
                         .HasColumnType("integer");
@@ -460,6 +472,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("CategoriaId");
 
                     b.HasIndex("EmpresaId");
+
+                    b.HasIndex("ProdutoOrigemGranelId");
 
                     b.HasIndex("UnidadeMedidaId");
 
@@ -1968,6 +1982,9 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<string>("Numero")
                         .HasColumnType("text");
 
+                    b.Property<int>("PlanoLicenca")
+                        .HasColumnType("integer");
+
                     b.Property<string>("RazaoSocial")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1987,6 +2004,54 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Empresas", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.EmpresaModulo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataAtivacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataExpiracao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ModuloCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<int>("Origem")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId", "ModuloCodigo")
+                        .IsUnique();
+
+                    b.ToTable("EmpresaModulos", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Core.Entities.Estoque.Deposito", b =>
@@ -4365,6 +4430,47 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("XmlNotasFiscais", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Core.Entities.ModuloSistema", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.ToTable("ModulosSistema", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Core.Entities.Moeda", b =>
                 {
                     b.Property<int>("Id")
@@ -4938,6 +5044,1944 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Permissoes", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AberturaSacoGranel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("CustoUnitarioGranel")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTime>("DataAbertura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataValidadeAposAbertura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DepositoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LoteId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PesoTotalGeradoKg")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<int>("ProdutoGranelId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoSacoId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("QuantidadeSacos")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepositoId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("LoteId");
+
+                    b.HasIndex("ProdutoGranelId");
+
+                    b.HasIndex("ProdutoSacoId");
+
+                    b.ToTable("AberturasSacoGranel", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AcessoPortalTutor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenAcesso")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime?>("UltimoAcessoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ValidoAte")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("TokenAcesso")
+                        .IsUnique();
+
+                    b.ToTable("AcessosPortalTutor", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BanhistaNome")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("CheckInEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("CobertoPorPacote")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("ComandaAtendimentoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataAgendada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DuracaoMinutos")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EntregueEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FotoEntradaUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FotoSaidaUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("ObservacoesCheckIn")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PacoteBanhoPetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Pertences")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ProntoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RecursoBanhoTosaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TabelaPrecoBanhoId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("TemLesoesPele")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TemNos")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TemOtite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TemPulgasCarrapatos")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TosadorNome")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("ValorAdicionais")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorServico")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ComandaAtendimentoId");
+
+                    b.HasIndex("PacoteBanhoPetId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("RecursoBanhoTosaId");
+
+                    b.HasIndex("TabelaPrecoBanhoId");
+
+                    b.HasIndex("EmpresaId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("AtendimentosBanhoTosa", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.BaiaInternacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Setor")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorDiaria")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId", "Codigo")
+                        .IsUnique();
+
+                    b.ToTable("BaiasInternacao", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ChecagemEnfermagem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataHoraAplicada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataHoraPrevista")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PrescricaoInternacaoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResponsavelEnfermagem")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("PrescricaoInternacaoId");
+
+                    b.ToTable("ChecagensEnfermagem", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.CirurgiaVeterinaria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnestesistaNome")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ComandaAtendimentoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataHoraAgendada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Intercorrencias")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MonitoramentoTransOperatorio")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Procedimento")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProtocoloAnestesico")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SalaCirurgica")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorProcedimento")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("VeterinarioCirurgiaoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ComandaAtendimentoId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("VeterinarioCirurgiaoId");
+
+                    b.HasIndex("EmpresaId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("CirurgiasVeterinarias", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ConvenioPetId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataAbertura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataFechamento")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorBruto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorCobertoConvenio")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorDesconto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorLiquido")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int?>("VendaPdvId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ConvenioPetId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("VendaPdvId");
+
+                    b.HasIndex("EmpresaId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("ComandasAtendimento", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComandaItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("CobertoPorPacote")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ComandaAtendimentoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("DocumentoFiscalDestino")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Origem")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProdutoId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Quantidade")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<int?>("ServicoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TipoItem")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorCobertoConvenio")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorDesconto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorUnitario")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComandaAtendimentoId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.HasIndex("ServicoId");
+
+                    b.ToTable("ComandaItens", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComissaoBanhoTosa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("AtendimentoBanhoTosaId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("BaseCalculo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataPagamento")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Etapa")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Paga")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("Percentual")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("ProfissionalNome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("ValorComissao")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AtendimentoBanhoTosaId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.ToTable("ComissoesBanhoTosa", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ConfiguracaoWhatsAppEmpresa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApiKey")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BaseUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("EnviarBanhoPronto")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnviarBoletimInternacao")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EnviarLembreteVacina")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("InstanceName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provedor")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId")
+                        .IsUnique();
+
+                    b.ToTable("ConfiguracoesWhatsAppEmpresa", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ConsultaVeterinaria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ComandaAtendimentoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataHora")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FinalizadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("FrequenciaCardiacaBpm")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FrequenciaRespiratoriaMpm")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Mucosas")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<decimal?>("PesoKg")
+                        .HasPrecision(8, 3)
+                        .HasColumnType("numeric(8,3)");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("QueixaPrincipal")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SoapAvaliacao")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SoapObjetivo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SoapPlano")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SoapSubjetivo")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("TemperaturaC")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TpcSegundos")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorConsulta")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("VeterinarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ComandaAtendimentoId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("VeterinarioId");
+
+                    b.HasIndex("EmpresaId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("ConsultasVeterinarias", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ConvenioPet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PercentualCoberturaPadrao")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("Telefone")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.ToTable("ConveniosPet", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.EvolucaoInternacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataHora")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DescricaoEvolucao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EstadoGeral")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("FrequenciaCardiacaBpm")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FrequenciaRespiratoriaMpm")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("InternacaoPetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProfissionalNome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("TemperaturaC")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)");
+
+                    b.Property<string>("Turno")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("VisivelBoletimTutor")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("InternacaoPetId");
+
+                    b.ToTable("EvolucoesInternacao", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ExameVeterinario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("CodigoAmostraLis")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataResultado")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataSolicitacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LaudoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeExame")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("PayloadHl7Bruto")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResultadoTexto")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("VeterinarioSolicitanteId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("VeterinarioSolicitanteId");
+
+                    b.HasIndex("EmpresaId", "CodigoAmostraLis");
+
+                    b.ToTable("ExamesVeterinarios", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.InternacaoPet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("BaiaInternacaoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ComandaAtendimentoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataAltaPrevista")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataAltaReal")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataEntrada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MotivoInternacao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorDiaria")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("VeterinarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BaiaInternacaoId");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("ComandaAtendimentoId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("VeterinarioId");
+
+                    b.HasIndex("EmpresaId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("InternacoesPet", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.NotificacaoWhatsAppOutbox", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataAgendada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataEnvio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ErroDetalhe")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Mensagem")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TelefoneDestino")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TipoEvento")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("EmpresaId", "Status");
+
+                    b.ToTable("NotificacoesWhatsAppOutbox", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.PacoteBanhoPet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataInicio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataValidade")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NomePacote")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SessoesUtilizadas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalSessoes")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("PetId");
+
+                    b.ToTable("PacotesBanhoPet", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.Pet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Alergias")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Castrado")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("CausaObito")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ConvenioPetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CorPelagem")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataNascimento")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataObito")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Especie")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FotoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("IdadeEstimadaMeses")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Microchip")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("NumeroCarteirinhaConvenio")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Obito")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("PesoAtualKg")
+                        .HasPrecision(8, 3)
+                        .HasColumnType("numeric(8,3)");
+
+                    b.Property<int>("Porte")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Raca")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("RestricoesAlimentares")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sexo")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Temperamento")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TipoPelagem")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConvenioPetId");
+
+                    b.HasIndex("EmpresaId", "Nome");
+
+                    b.ToTable("Pets", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.PrescricaoInternacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DescricaoMedicamento")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Dose")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("HorarioInicio")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("InternacaoPetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IntervaloHoras")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProdutoId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("QuantidadePorAplicacao")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("ValorUnitarioCobranca")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Via")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("InternacaoPetId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.ToTable("PrescricoesInternacao", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("ConsultaVeterinariaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataEmissao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VeterinarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConsultaVeterinariaId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("VeterinarioId");
+
+                    b.ToTable("ReceitasVeterinarias", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ReceitaVeterinariaItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Concentracao")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("DuracaoDias")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Medicamento")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Posologia")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("PrincipioAtivo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Quantidade")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ReceitaVeterinariaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ViaAdministracao")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("ReceitaVeterinariaId");
+
+                    b.ToTable("ReceitaVeterinariaItens", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.RecursoBanhoTosa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.ToTable("RecursosBanhoTosa", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.TabelaPrecoBanho", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("ComissaoBanhoPercentual")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal>("ComissaoTosaPercentual")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("DuracaoMinutos")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NomeServico")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int>("Porte")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ServicoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TipoPelagem")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServicoId");
+
+                    b.HasIndex("EmpresaId", "Porte", "TipoPelagem");
+
+                    b.ToTable("TabelasPrecoBanho", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.TermoConsentimentoPet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Assinado")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("AssinadoPorNome")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ConteudoTermo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataAssinatura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TokenAssinatura")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("PetId");
+
+                    b.ToTable("TermosConsentimentoPet", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.TutorPet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("PodeAssinarTermos")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("RecebeNotificacoes")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("TipoVinculo")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("PetId", "ClienteId")
+                        .IsUnique();
+
+                    b.ToTable("TutorPets", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.VacinacaoVermifugoPet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataAplicacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Dose")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Fabricante")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeProduto")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("NumeroLote")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProdutoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ProximaAplicacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ValidadeLote")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("VeterinarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.HasIndex("VeterinarioId");
+
+                    b.ToTable("VacinacoesVermifugosPet", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.Veterinario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Crmv")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Especialidade")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Telefone")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UfCrmv")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<decimal>("ValorConsultaPadrao")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.ToTable("Veterinarios", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Core.Entities.Servicos.OrdemServico", b =>
@@ -6049,6 +8093,10 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Produto", "ProdutoOrigemGranel")
+                        .WithMany()
+                        .HasForeignKey("ProdutoOrigemGranelId");
+
                     b.HasOne("ERP.Domain.Core.Entities.Cadastros.UnidadeMedida", "UnidadeMedida")
                         .WithMany("Produtos")
                         .HasForeignKey("UnidadeMedidaId")
@@ -6057,6 +8105,8 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Categoria");
 
                     b.Navigation("Empresa");
+
+                    b.Navigation("ProdutoOrigemGranel");
 
                     b.Navigation("UnidadeMedida");
                 });
@@ -6526,6 +8576,17 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Orcamento");
 
                     b.Navigation("PedidoVenda");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.EmpresaModulo", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany("Modulos")
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
                 });
 
             modelBuilder.Entity("ERP.Domain.Core.Entities.Estoque.Deposito", b =>
@@ -7370,6 +9431,709 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("VendaPdv");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AberturaSacoGranel", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Estoque.Deposito", "Deposito")
+                        .WithMany()
+                        .HasForeignKey("DepositoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Estoque.Lote", "Lote")
+                        .WithMany()
+                        .HasForeignKey("LoteId");
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Produto", "ProdutoGranel")
+                        .WithMany()
+                        .HasForeignKey("ProdutoGranelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Produto", "ProdutoSaco")
+                        .WithMany()
+                        .HasForeignKey("ProdutoSacoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Deposito");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Lote");
+
+                    b.Navigation("ProdutoGranel");
+
+                    b.Navigation("ProdutoSaco");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AcessoPortalTutor", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", "ComandaAtendimento")
+                        .WithMany()
+                        .HasForeignKey("ComandaAtendimentoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.PacoteBanhoPet", "PacoteBanhoPet")
+                        .WithMany()
+                        .HasForeignKey("PacoteBanhoPetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.RecursoBanhoTosa", "RecursoBanhoTosa")
+                        .WithMany()
+                        .HasForeignKey("RecursoBanhoTosaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.TabelaPrecoBanho", "TabelaPrecoBanho")
+                        .WithMany()
+                        .HasForeignKey("TabelaPrecoBanhoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ComandaAtendimento");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("PacoteBanhoPet");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("RecursoBanhoTosa");
+
+                    b.Navigation("TabelaPrecoBanho");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.BaiaInternacao", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ChecagemEnfermagem", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.PrescricaoInternacao", "PrescricaoInternacao")
+                        .WithMany("Checagens")
+                        .HasForeignKey("PrescricaoInternacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("PrescricaoInternacao");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.CirurgiaVeterinaria", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", "ComandaAtendimento")
+                        .WithMany()
+                        .HasForeignKey("ComandaAtendimentoId");
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Veterinario", "VeterinarioCirurgiao")
+                        .WithMany()
+                        .HasForeignKey("VeterinarioCirurgiaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ComandaAtendimento");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("VeterinarioCirurgiao");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ConvenioPet", "ConvenioPet")
+                        .WithMany()
+                        .HasForeignKey("ConvenioPetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pdv.VendaPdv", "VendaPdv")
+                        .WithMany()
+                        .HasForeignKey("VendaPdvId");
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ConvenioPet");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("VendaPdv");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComandaItem", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", "ComandaAtendimento")
+                        .WithMany("Itens")
+                        .HasForeignKey("ComandaAtendimentoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Produto", "Produto")
+                        .WithMany()
+                        .HasForeignKey("ProdutoId");
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Servico", "Servico")
+                        .WithMany()
+                        .HasForeignKey("ServicoId");
+
+                    b.Navigation("ComandaAtendimento");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Produto");
+
+                    b.Navigation("Servico");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComissaoBanhoTosa", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa", "AtendimentoBanhoTosa")
+                        .WithMany("Comissoes")
+                        .HasForeignKey("AtendimentoBanhoTosaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AtendimentoBanhoTosa");
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ConfiguracaoWhatsAppEmpresa", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ConsultaVeterinaria", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", "ComandaAtendimento")
+                        .WithMany()
+                        .HasForeignKey("ComandaAtendimentoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Veterinario", "Veterinario")
+                        .WithMany()
+                        .HasForeignKey("VeterinarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ComandaAtendimento");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("Veterinario");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ConvenioPet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.EvolucaoInternacao", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.InternacaoPet", "InternacaoPet")
+                        .WithMany("Evolucoes")
+                        .HasForeignKey("InternacaoPetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("InternacaoPet");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ExameVeterinario", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Veterinario", "VeterinarioSolicitante")
+                        .WithMany()
+                        .HasForeignKey("VeterinarioSolicitanteId");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("VeterinarioSolicitante");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.InternacaoPet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.BaiaInternacao", "BaiaInternacao")
+                        .WithMany()
+                        .HasForeignKey("BaiaInternacaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", "ComandaAtendimento")
+                        .WithMany()
+                        .HasForeignKey("ComandaAtendimentoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Veterinario", "Veterinario")
+                        .WithMany()
+                        .HasForeignKey("VeterinarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BaiaInternacao");
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("ComandaAtendimento");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("Veterinario");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.NotificacaoWhatsAppOutbox", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId");
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId");
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.PacoteBanhoPet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.Pet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ConvenioPet", "ConvenioPet")
+                        .WithMany()
+                        .HasForeignKey("ConvenioPetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ConvenioPet");
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.PrescricaoInternacao", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.InternacaoPet", "InternacaoPet")
+                        .WithMany("Prescricoes")
+                        .HasForeignKey("InternacaoPetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Produto", "Produto")
+                        .WithMany()
+                        .HasForeignKey("ProdutoId");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("InternacaoPet");
+
+                    b.Navigation("Produto");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ConsultaVeterinaria", "ConsultaVeterinaria")
+                        .WithMany()
+                        .HasForeignKey("ConsultaVeterinariaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Veterinario", "Veterinario")
+                        .WithMany()
+                        .HasForeignKey("VeterinarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ConsultaVeterinaria");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("Veterinario");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ReceitaVeterinariaItem", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria", "ReceitaVeterinaria")
+                        .WithMany("Itens")
+                        .HasForeignKey("ReceitaVeterinariaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("ReceitaVeterinaria");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.RecursoBanhoTosa", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.TabelaPrecoBanho", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Servico", "Servico")
+                        .WithMany()
+                        .HasForeignKey("ServicoId");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Servico");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.TermoConsentimentoPet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.TutorPet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
+                        .WithMany("PetsVinculados")
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany("Tutores")
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.VacinacaoVermifugoPet", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Core.Entities.Cadastros.Produto", "Produto")
+                        .WithMany()
+                        .HasForeignKey("ProdutoId");
+
+                    b.HasOne("ERP.Domain.Core.Entities.Pet.Veterinario", "Veterinario")
+                        .WithMany()
+                        .HasForeignKey("VeterinarioId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Pet");
+
+                    b.Navigation("Produto");
+
+                    b.Navigation("Veterinario");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.Veterinario", b =>
+                {
+                    b.HasOne("ERP.Domain.Core.Entities.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
             modelBuilder.Entity("ERP.Domain.Core.Entities.Servicos.OrdemServico", b =>
                 {
                     b.HasOne("ERP.Domain.Core.Entities.Cadastros.Cliente", "Cliente")
@@ -7699,6 +10463,8 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Core.Entities.Cadastros.Cliente", b =>
                 {
                     b.Navigation("Enderecos");
+
+                    b.Navigation("PetsVinculados");
                 });
 
             modelBuilder.Entity("ERP.Domain.Core.Entities.Cadastros.Fornecedor", b =>
@@ -7756,6 +10522,8 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Core.Entities.Empresa", b =>
                 {
+                    b.Navigation("Modulos");
+
                     b.Navigation("UsuarioEmpresas");
                 });
 
@@ -7830,6 +10598,38 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Core.Entities.Permissao", b =>
                 {
                     b.Navigation("PapelPermissoes");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.AtendimentoBanhoTosa", b =>
+                {
+                    b.Navigation("Comissoes");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ComandaAtendimento", b =>
+                {
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.InternacaoPet", b =>
+                {
+                    b.Navigation("Evolucoes");
+
+                    b.Navigation("Prescricoes");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.Pet", b =>
+                {
+                    b.Navigation("Tutores");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.PrescricaoInternacao", b =>
+                {
+                    b.Navigation("Checagens");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Core.Entities.Pet.ReceitaVeterinaria", b =>
+                {
+                    b.Navigation("Itens");
                 });
 
             modelBuilder.Entity("ERP.Domain.Core.Entities.Servicos.OrdemServico", b =>

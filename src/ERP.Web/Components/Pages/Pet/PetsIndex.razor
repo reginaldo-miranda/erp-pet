@@ -1,0 +1,214 @@
+@page "/pet/pets"
+@using ERP.Application.Common.Interfaces
+@using ERP.Application.Pet.Convenios
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@using Microsoft.EntityFrameworkCore
+@inject IMediator Mediator
+@inject IApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>Pets &amp; Tutores - ERP Pet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">Pets &amp; Tutores (N:N)</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Cadastro central de Pets com múltiplos tutores, pessoas autorizadas a retirar e convênio.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="() => _exibirFormulario = !_exibirFormulario">
+            @(_exibirFormulario ? "Fechar Formulário" : "Novo Pet")
+        </MudButton>
+    </div>
+
+    @if (_exibirFormulario)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-3">Cadastrar Novo Pet</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_nome" Label="Nome do Pet *" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="EspeciePet" @bind-Value="_especie" Label="Espécie" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var e in Enum.GetValues<EspeciePet>())
+                        {
+                            <MudSelectItem Value="e">@e</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_raca" Label="Raça" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudSelect T="PortePet" @bind-Value="_porte" Label="Porte" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var p in Enum.GetValues<PortePet>())
+                        {
+                            <MudSelectItem Value="p">@p</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="TipoPelagemPet" @bind-Value="_pelagem" Label="Pelagem" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var p in Enum.GetValues<TipoPelagemPet>())
+                        {
+                            <MudSelectItem Value="p">@p</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="TemperamentoPet" @bind-Value="_temperamento" Label="Temperamento" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var t in Enum.GetValues<TemperamentoPet>())
+                        {
+                            <MudSelectItem Value="t">@t</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="2">
+                    <MudNumericField T="decimal?" @bind-Value="_pesoKg" Label="Peso (kg)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="int" @bind-Value="_tutorPrincipalId" Label="Tutor Principal *" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var cli in _clientes)
+                        {
+                            <MudSelectItem Value="cli.Id">@cli.Nome (@cli.CpfCnpj)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_microchip" Label="Microchip" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="int?" @bind-Value="_convenioId" Label="Convênio Pet" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                        @foreach (var conv in _convenios)
+                        {
+                            <MudSelectItem T="int?" Value="conv.Id">@conv.Nome (@conv.PercentualCoberturaPadrao%)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_alergias" Label="Alergias / Restrições" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-end">
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SalvarPet">Salvar Pet</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    <MudPaper Class="pa-4 mb-4" Elevation="1">
+        <MudGrid AlignItems="Center">
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_busca" Label="Buscar por Pet, Tutor, Raça ou Microchip"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="CarregarPets">Filtrar</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudTable Items="_pets" Hover="true" Striped="true" Loading="_carregando" Elevation="2">
+        <HeaderContent>
+            <MudTh>Pet</MudTh>
+            <MudTh>Espécie / Raça</MudTh>
+            <MudTh>Porte / Pelagem</MudTh>
+            <MudTh>Peso</MudTh>
+            <MudTh>Tutores Vinculados</MudTh>
+            <MudTh>Convênio</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <strong>@context.Nome</strong>
+                @if (context.Obito)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Dark">Óbito</MudChip>
+                }
+            </MudTd>
+            <MudTd>@context.Especie — @(context.Raca ?? "SRD")</MudTd>
+            <MudTd>@context.Porte / @context.TipoPelagem</MudTd>
+            <MudTd>@(context.PesoAtualKg?.ToString("N2") ?? "-") kg</MudTd>
+            <MudTd>
+                @foreach (var t in context.Tutores)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="@(t.TipoVinculo == TipoVinculoTutor.Principal ? Color.Primary : Color.Default)">
+                        @t.NomeTutor (@t.TipoVinculo)
+                    </MudChip>
+                }
+            </MudTd>
+            <MudTd>@(context.NomeConvenio ?? "-")</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private bool _carregando = true;
+    private bool _exibirFormulario;
+    private string? _busca;
+    private List<PetDto> _pets = new();
+    private List<ERP.Domain.Core.Entities.Cadastros.Cliente> _clientes = new();
+    private List<ConvenioPetDto> _convenios = new();
+
+    private string _nome = string.Empty;
+    private EspeciePet _especie = EspeciePet.Cao;
+    private string? _raca;
+    private PortePet _porte = PortePet.M;
+    private TipoPelagemPet _pelagem = TipoPelagemPet.Curta;
+    private TemperamentoPet _temperamento = TemperamentoPet.Docil;
+    private decimal? _pesoKg;
+    private int _tutorPrincipalId;
+    private string? _microchip;
+    private int? _convenioId;
+    private string? _alergias;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = await DbContext.Clientes.AsNoTracking().OrderBy(c => c.Nome).Take(200).ToListAsync();
+        if (_clientes.Count > 0)
+            _tutorPrincipalId = _clientes[0].Id;
+
+        var convRes = await Mediator.Send(new GetConveniosPetQuery());
+        if (convRes.Sucesso && convRes.Dados != null)
+            _convenios = convRes.Dados;
+
+        await CarregarPets();
+    }
+
+    private async Task CarregarPets()
+    {
+        _carregando = true;
+        var res = await Mediator.Send(new GetPetsQuery(_busca));
+        if (res.Sucesso && res.Dados != null)
+            _pets = res.Dados;
+        _carregando = false;
+    }
+
+    private async Task SalvarPet()
+    {
+        if (_tutorPrincipalId <= 0)
+        {
+            Snackbar.Add("Cadastre ou selecione um Tutor (Cliente) primeiro.", Severity.Warning);
+            return;
+        }
+
+        var res = await Mediator.Send(new CreatePetCommand(
+            _nome, _especie, _raca, null, SexoPet.Indefinido, false, null, null,
+            _porte, _pelagem, _pesoKg, _microchip, _temperamento, _alergias, null, null,
+            _convenioId, null, _tutorPrincipalId));
+
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Pet cadastrado com sucesso!", Severity.Success);
+            _nome = string.Empty;
+            _raca = null;
+            _exibirFormulario = false;
+            await CarregarPets();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

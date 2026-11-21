@@ -14,5 +14,7 @@ public enum OrigemMovimentacaoEstoque
     CancelamentoVenda = 7,
     CancelamentoCompra = 8,
     OrdemServico = 9,
-    Pdv = 10
+    Pdv = 10,
+    FracionamentoGranel = 11,
+    HospitalInternacao = 12
 }

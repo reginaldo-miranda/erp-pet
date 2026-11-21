@@ -1,0 +1,73 @@
+@page "/pet/convenios"
+@using ERP.Application.Pet.Convenios
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>Convênios Pet - ERP Pet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Convênios &amp; Planos de Saúde Pet</MudText>
+
+    <MudPaper Class="pa-4 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">Novo Convênio</MudText>
+        <MudGrid AlignItems="Center">
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_nome" Label="Nome do Convênio *" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_cnpj" Label="CNPJ" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudNumericField T="decimal" @bind-Value="_percentual" Label="% Cobertura Padrão" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar">Cadastrar</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudTable Items="_convenios" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Nome</MudTh>
+            <MudTh>CNPJ</MudTh>
+            <MudTh>Cobertura Padrão</MudTh>
+            <MudTh>Ativo</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd><strong>@context.Nome</strong></MudTd>
+            <MudTd>@(context.Cnpj ?? "-")</MudTd>
+            <MudTd>@context.PercentualCoberturaPadrao.ToString("N2")%</MudTd>
+            <MudTd>@(context.Ativo ? "Sim" : "Não")</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<ConvenioPetDto> _convenios = new();
+    private string _nome = string.Empty;
+    private string? _cnpj;
+    private decimal _percentual = 50;
+
+    protected override async Task OnInitializedAsync() => await Carregar();
+
+    private async Task Carregar()
+    {
+        var res = await Mediator.Send(new GetConveniosPetQuery());
+        if (res.Sucesso && res.Dados != null) _convenios = res.Dados;
+    }
+
+    private async Task Salvar()
+    {
+        var res = await Mediator.Send(new CreateConvenioPetCommand(_nome, _cnpj, null, null, _percentual, null));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Convênio cadastrado!", Severity.Success);
+            _nome = string.Empty;
+            _cnpj = null;
+            await Carregar();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

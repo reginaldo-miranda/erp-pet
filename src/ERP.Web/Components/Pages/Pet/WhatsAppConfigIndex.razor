@@ -1,0 +1,128 @@
+@page "/pet/whatsapp"
+@using ERP.Application.Pet.TutorPortal
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>WhatsApp &amp; Outbox de Notificações</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Notificações WhatsApp — Configuração &amp; Fila Outbox</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Configuração da Integração</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="string" @bind-Value="_provedor" Label="Provedor" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="@("EvolutionApi")">Evolution API</MudSelectItem>
+                            <MudSelectItem Value="@("MetaCloudApi")">Meta Cloud API</MudSelectItem>
+                            <MudSelectItem Value="@("Webhook")">Webhook Customizado</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6"><MudTextField @bind-Value="_instanceName" Label="Instância" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="12"><MudTextField @bind-Value="_baseUrl" Label="URL Base (vazio = modo simulado)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="12"><MudTextField @bind-Value="_apiKey" Label="API Key / Token" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="12">
+                        <MudCheckBox @bind-Value="_envBanho" Label="Enviar aviso de Banho Pronto" />
+                        <MudCheckBox @bind-Value="_envVacina" Label="Enviar lembrete de Vacina" />
+                        <MudCheckBox @bind-Value="_envBoletim" Label="Enviar boletim de Internação" />
+                    </MudItem>
+                    <MudItem xs="12" Class="d-flex justify-end">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarConfig">Salvar Configuração</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Enfileirar &amp; Disparar Mensagem</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6"><MudTextField @bind-Value="_telTeste" Label="Telefone (ex: 5511999999999)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="TipoEventoWhatsApp" @bind-Value="_eventoTeste" Label="Evento" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var e in Enum.GetValues<TipoEventoWhatsApp>()) { <MudSelectItem Value="e">@e</MudSelectItem> }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12"><MudTextField @bind-Value="_msgTeste" Label="Mensagem" Lines="2" Variant="Variant.Outlined" /></MudItem>
+                    <MudItem xs="12" Class="d-flex justify-end gap-2">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="Enfileirar">Enfileirar</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="DispararFila">Disparar Pendentes</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="_outbox" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent><MudTh>Data</MudTh><MudTh>Telefone</MudTh><MudTh>Evento</MudTh><MudTh>Mensagem</MudTh><MudTh>Status</MudTh></HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.DataAgendada.ToLocalTime().ToString("dd/MM HH:mm")</MudTd>
+            <MudTd>@context.TelefoneDestino</MudTd>
+            <MudTd>@context.TipoEvento</MudTd>
+            <MudTd>@context.Mensagem</MudTd>
+            <MudTd><MudChip T="string" Size="Size.Small" Color="@(context.Status == StatusNotificacaoWhatsApp.Enviada ? Color.Success : Color.Warning)">@context.Status</MudChip></MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private string _provedor = "EvolutionApi";
+    private string? _baseUrl;
+    private string? _instanceName;
+    private string? _apiKey;
+    private bool _envBanho = true;
+    private bool _envVacina = true;
+    private bool _envBoletim = true;
+
+    private string _telTeste = "5511999999999";
+    private TipoEventoWhatsApp _eventoTeste = TipoEventoWhatsApp.BanhoPronto;
+    private string _msgTeste = "Olá! Seu pet já está prontinho e cheiroso para retirada.";
+    private List<OutboxWhatsAppDto> _outbox = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var cfg = await Mediator.Send(new GetConfigWhatsAppQuery());
+        if (cfg.Sucesso && cfg.Dados != null)
+        {
+            _provedor = cfg.Dados.Provedor;
+            _baseUrl = cfg.Dados.BaseUrl;
+            _instanceName = cfg.Dados.InstanceName;
+            _apiKey = cfg.Dados.ApiKey;
+            _envBanho = cfg.Dados.EnviarBanhoPronto;
+            _envVacina = cfg.Dados.EnviarLembreteVacina;
+            _envBoletim = cfg.Dados.EnviarBoletimInternacao;
+        }
+        await CarregarOutbox();
+    }
+
+    private async Task CarregarOutbox()
+    {
+        var res = await Mediator.Send(new GetOutboxWhatsAppQuery());
+        if (res.Sucesso && res.Dados != null) _outbox = res.Dados;
+    }
+
+    private async Task SalvarConfig()
+    {
+        var res = await Mediator.Send(new SalvarConfigWhatsAppCommand(_provedor, _baseUrl, _instanceName, _apiKey, _envBanho, _envVacina, _envBoletim));
+        if (res.Sucesso) Snackbar.Add("Configuração salva!", Severity.Success);
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task Enfileirar()
+    {
+        var res = await Mediator.Send(new EnfileirarWhatsAppCommand(null, null, _telTeste, _eventoTeste, _msgTeste));
+        if (res.Sucesso) { Snackbar.Add("Mensagem enfileirada!", Severity.Success); await CarregarOutbox(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task DispararFila()
+    {
+        var res = await Mediator.Send(new DispararOutboxWhatsAppCommand());
+        if (res.Sucesso) { Snackbar.Add($"{res.Dados} mensagem(ns) processada(s)!", Severity.Success); await CarregarOutbox(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

@@ -40,4 +40,11 @@ public class Produto : BaseEmpresaEntity, IAggregateRoot
     public string? CodigoBarras { get; set; }
     public string? CodigoFornecedor { get; set; }
     public string? ImagemUrl { get; set; }
+
+    // Fracionamento / Venda a Granel (Pet Shop)
+    public bool PermiteFracionamento { get; set; }
+    public int? ProdutoOrigemGranelId { get; set; }
+    public Produto? ProdutoOrigemGranel { get; set; }
+    public decimal? FatorConversaoGranel { get; set; } // Ex: 15 (1 saco = 15 kg)
+    public int? DiasValidadeAposAbertura { get; set; }
 }

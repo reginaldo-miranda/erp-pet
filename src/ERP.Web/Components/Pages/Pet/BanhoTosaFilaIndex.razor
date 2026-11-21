@@ -1,0 +1,284 @@
+@page "/pet/banho-tosa/fila"
+@using ERP.Application.Pet.BanhoTosa
+@using ERP.Application.Pet.Comandas
+@using ERP.Application.Pet.Pets
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+@inject ISnackbar Snackbar
+
+<PageTitle>Banho &amp; Tosa - Fila e Agenda</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">Banho &amp; Tosa — Agenda &amp; Fila em Tempo Real</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Agendamento por box/profissional, check-in com checklist de saúde/pertences e fluxo Kanban.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="() => _exibirAgendamento = !_exibirAgendamento">
+            @(_exibirAgendamento ? "Fechar Agendamento" : "Novo Agendamento")
+        </MudButton>
+    </div>
+
+    @if (_exibirAgendamento)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-3">Agendar Banho &amp; Tosa</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="int" Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               ValueChanged="OnPetSelecionado">
+                        @foreach (var p in _pets)
+                        {
+                            <MudSelectItem Value="p.Id">@p.Nome (@p.Porte / @p.TipoPelagem)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="int?" @bind-Value="_recursoId" Label="Box / Banheira" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                        @foreach (var r in _recursos)
+                        {
+                            <MudSelectItem T="int?" Value="r.Id">@r.Nome (@r.Tipo)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="int?" @bind-Value="_pacoteId" Label="Pacote (Opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                        @foreach (var pac in _pacotes.Where(x => x.SessoesDisponiveis > 0))
+                        {
+                            <MudSelectItem T="int?" Value="pac.Id">@pac.NomePacote (Saldo: @pac.SessoesDisponiveis)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_banhista" Label="Banhista" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="_tosador" Label="Tosador" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudNumericField T="decimal" @bind-Value="_valorAdicionais" Label="Adicionais (R$)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudSelect T="int?" @bind-Value="_comandaId" Label="Comanda Aberta (Opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                        @foreach (var cmd in _comandasAbertas)
+                        {
+                            <MudSelectItem T="int?" Value="cmd.Id">@cmd.Numero (@cmd.NomeTutor)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-end">
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Agendar">Confirmar Agendamento</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    @if (_checkInAlvo != null)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="3">
+            <MudText Typo="Typo.h6" Class="mb-2">Check-in: @_checkInAlvo.NomePet (@_checkInAlvo.Numero)</MudText>
+            <MudGrid>
+                <MudItem xs="6" md="3"><MudCheckBox @bind-Value="_temNos" Label="Tem Nós" /></MudItem>
+                <MudItem xs="6" md="3"><MudCheckBox @bind-Value="_temPulgas" Label="Pulgas / Carrapatos" /></MudItem>
+                <MudItem xs="6" md="3"><MudCheckBox @bind-Value="_temLesoes" Label="Lesões de Pele" /></MudItem>
+                <MudItem xs="6" md="3"><MudCheckBox @bind-Value="_temOtite" Label="Sinais de Otite" /></MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_pertences" Label="Pertences (coleira, guia, etc.)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_fotoEntrada" Label="URL Foto Entrada" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="_obsCheckIn" Label="Observações Check-in" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-end gap-2">
+                    <MudButton Variant="Variant.Text" OnClick="() => _checkInAlvo = null">Cancelar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConfirmarCheckIn">Registrar Check-in</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    <MudGrid>
+        @foreach (var col in _colunasKanban)
+        {
+            var itensCol = _atendimentos.Where(a => a.Status == col.Status).ToList();
+            <MudItem xs="12" md="4" lg="2">
+                <MudPaper Class="pa-3" Elevation="2">
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">
+                        <strong>@col.Titulo</strong> (@itensCol.Count)
+                    </MudText>
+                    @foreach (var item in itensCol)
+                    {
+                        <MudCard Class="mb-2" Outlined="true">
+                            <MudCardContent Class="pa-2">
+                                <MudText Typo="Typo.body2"><strong>@item.NomePet</strong> (@item.PortePet)</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@item.NomeTutor</MudText><br />
+                                <MudText Typo="Typo.caption">@item.DataAgendada.ToLocalTime().ToString("HH:mm") • @(item.NomeRecurso ?? "Sem box")</MudText>
+                                @if (item.CobertoPorPacote)
+                                {
+                                    <div><MudChip T="string" Size="Size.Small" Color="Color.Info">Pacote</MudChip></div>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.caption"><strong>@item.ValorTotal.ToString("C2")</strong></MudText>
+                                }
+                            </MudCardContent>
+                            <MudCardActions Class="pa-1 d-flex flex-wrap gap-1">
+                                @if (item.Status == StatusAtendimentoBanho.Agendado)
+                                {
+                                    <MudButton Size="Size.Small" Color="Color.Primary" OnClick="() => AbrirCheckIn(item)">Check-in</MudButton>
+                                }
+                                @if (col.ProximoStatus.HasValue)
+                                {
+                                    <MudButton Size="Size.Small" Color="Color.Success" OnClick="() => Avancar(item.Id, col.ProximoStatus.Value)">
+                                        @col.TextoBotao
+                                    </MudButton>
+                                }
+                            </MudCardActions>
+                        </MudCard>
+                    }
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private record ColunaKanban(StatusAtendimentoBanho Status, string Titulo, StatusAtendimentoBanho? ProximoStatus, string TextoBotao);
+
+    private readonly List<ColunaKanban> _colunasKanban = new()
+    {
+        new(StatusAtendimentoBanho.Agendado, "Agendados", StatusAtendimentoBanho.AguardandoCheckIn, "Receber"),
+        new(StatusAtendimentoBanho.AguardandoCheckIn, "Aguardando", StatusAtendimentoBanho.EmBanho, "Iniciar Banho"),
+        new(StatusAtendimentoBanho.EmBanho, "Em Banho", StatusAtendimentoBanho.SecagemTosa, "Secagem/Tosa"),
+        new(StatusAtendimentoBanho.SecagemTosa, "Secagem/Tosa", StatusAtendimentoBanho.ProntoRetirada, "Marcar Pronto"),
+        new(StatusAtendimentoBanho.ProntoRetirada, "Pronto Retirada", StatusAtendimentoBanho.Entregue, "Entregar"),
+        new(StatusAtendimentoBanho.Entregue, "Entregues", null, "")
+    };
+
+    private bool _exibirAgendamento;
+    private List<AtendimentoBanhoDto> _atendimentos = new();
+    private List<PetDto> _pets = new();
+    private List<RecursoBanhoDto> _recursos = new();
+    private List<PacoteBanhoDto> _pacotes = new();
+    private List<ComandaAtendimentoDto> _comandasAbertas = new();
+
+    private int _petId;
+    private int _clienteId;
+    private int? _recursoId;
+    private int? _pacoteId;
+    private int? _comandaId;
+    private string? _banhista;
+    private string? _tosador;
+    private decimal _valorAdicionais;
+
+    private AtendimentoBanhoDto? _checkInAlvo;
+    private bool _temNos;
+    private bool _temPulgas;
+    private bool _temLesoes;
+    private bool _temOtite;
+    private string? _pertences;
+    private string? _fotoEntrada;
+    private string? _obsCheckIn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var pRes = await Mediator.Send(new GetPetsQuery());
+        if (pRes.Sucesso && pRes.Dados != null)
+        {
+            _pets = pRes.Dados;
+            if (_pets.Count > 0) OnPetSelecionado(_pets[0].Id);
+        }
+
+        var rRes = await Mediator.Send(new GetRecursosBanhoQuery());
+        if (rRes.Sucesso && rRes.Dados != null) _recursos = rRes.Dados;
+
+        var pacRes = await Mediator.Send(new GetPacotesBanhoQuery());
+        if (pacRes.Sucesso && pacRes.Dados != null) _pacotes = pacRes.Dados;
+
+        var cmdRes = await Mediator.Send(new GetComandasQuery(StatusComanda.Aberta));
+        if (cmdRes.Sucesso && cmdRes.Dados != null) _comandasAbertas = cmdRes.Dados;
+
+        await CarregarFila();
+    }
+
+    private void OnPetSelecionado(int petId)
+    {
+        _petId = petId;
+        var pet = _pets.FirstOrDefault(p => p.Id == petId);
+        _clienteId = pet?.Tutores.FirstOrDefault()?.ClienteId ?? 0;
+    }
+
+    private async Task CarregarFila()
+    {
+        var res = await Mediator.Send(new GetAtendimentosBanhoQuery());
+        if (res.Sucesso && res.Dados != null) _atendimentos = res.Dados;
+    }
+
+    private async Task Agendar()
+    {
+        if (_petId <= 0 || _clienteId <= 0)
+        {
+            Snackbar.Add("Selecione um Pet com Tutor vinculado.", Severity.Warning);
+            return;
+        }
+        var res = await Mediator.Send(new AgendarBanhoCommand(
+            _petId, _clienteId, null, _pacoteId, _recursoId, _comandaId,
+            _banhista, _tosador, DateTime.Now, null, _valorAdicionais));
+
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Agendamento criado!", Severity.Success);
+            _exibirAgendamento = false;
+            await CarregarFila();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private void AbrirCheckIn(AtendimentoBanhoDto item)
+    {
+        _checkInAlvo = item;
+        _temNos = item.TemNos;
+        _temPulgas = item.TemPulgasCarrapatos;
+        _temLesoes = item.TemLesoesPele;
+        _temOtite = item.TemOtite;
+        _pertences = item.Pertences;
+        _fotoEntrada = item.FotoEntradaUrl;
+        _obsCheckIn = item.ObservacoesCheckIn;
+    }
+
+    private async Task ConfirmarCheckIn()
+    {
+        if (_checkInAlvo == null) return;
+        var res = await Mediator.Send(new RealizarCheckInBanhoCommand(
+            _checkInAlvo.Id, _temNos, _temPulgas, _temLesoes, _temOtite,
+            _pertences, _obsCheckIn, _fotoEntrada));
+
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Check-in registrado!", Severity.Success);
+            _checkInAlvo = null;
+            await CarregarFila();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task Avancar(int id, StatusAtendimentoBanho novoStatus)
+    {
+        var res = await Mediator.Send(new AvancarStatusBanhoCommand(id, novoStatus));
+        if (res.Sucesso)
+        {
+            Snackbar.Add($"Status atualizado para {novoStatus}!", Severity.Success);
+            await CarregarFila();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+}

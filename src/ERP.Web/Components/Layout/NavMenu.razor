@@ -1,3 +1,6 @@
+@using ERP.Application.Common.Interfaces
+@inject IModuloService ModuloService
+
 <MudNavMenu Class="mud-width-full">
     <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="px-4 py-2 font-weight-bold">PAINEL PRINCIPAL</MudText>
     <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" Href="/">Dashboard</MudNavLink>
@@ -5,12 +8,51 @@
 
     <MudNavGroup Title="Cadastros" Icon="@Icons.Material.Filled.Assignment" Expanded="true">
         <MudNavLink Href="/cadastros/empresas" Icon="@Icons.Material.Filled.Business">Empresas</MudNavLink>
-        <MudNavLink Href="/cadastros/clientes" Icon="@Icons.Material.Filled.People">Clientes</MudNavLink>
+        <MudNavLink Href="/cadastros/clientes" Icon="@Icons.Material.Filled.People">Clientes / Tutores</MudNavLink>
+        <MudNavLink Href="/pet/pets" Icon="@Icons.Material.Filled.Pets">Pets &amp; Tutores</MudNavLink>
         <MudNavLink Href="/cadastros/fornecedores" Icon="@Icons.Material.Filled.LocalShipping">Fornecedores</MudNavLink>
         <MudNavLink Href="/cadastros/produtos" Icon="@Icons.Material.Filled.Inventory2">Produtos</MudNavLink>
         <MudNavLink Href="/cadastros/servicos" Icon="@Icons.Material.Filled.Build">Serviços</MudNavLink>
         <MudNavLink Href="/cadastros/categorias" Icon="@Icons.Material.Filled.Category">Categorias</MudNavLink>
         <MudNavLink Href="/cadastros/unidades-medida" Icon="@Icons.Material.Filled.Straighten">Unidades de Medida</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Operação Pet" Icon="@Icons.Material.Filled.Pets" Expanded="true">
+        <MudNavLink Href="/pet/comandas" Icon="@Icons.Material.Filled.ReceiptLong">Comandas Unificadas</MudNavLink>
+        @if (_modulosAtivos.Contains(ModulosPet.LojaGranel))
+        {
+            <MudNavLink Href="/pet/granel" Icon="@Icons.Material.Filled.Scale">Fracionamento Granel</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.BanhoTosa))
+        {
+            <MudNavLink Href="/pet/banho-tosa/fila" Icon="@Icons.Material.Filled.Shower">Banho &amp; Tosa (Fila)</MudNavLink>
+            <MudNavLink Href="/pet/banho-tosa/pacotes" Icon="@Icons.Material.Filled.CardMembership">Pacotes &amp; Preços B&amp;T</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.VetAmbulatorio))
+        {
+            <MudNavLink Href="/pet/vet/ambulatorio" Icon="@Icons.Material.Filled.MedicalServices">Ambulatório &amp; SOAP</MudNavLink>
+            <MudNavLink Href="/pet/vet/vacinas" Icon="@Icons.Material.Filled.Vaccines">Carteira de Vacinas</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.VetInternacao))
+        {
+            <MudNavLink Href="/pet/vet/internacao" Icon="@Icons.Material.Filled.LocalHospital">Internação 24h &amp; Baias</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.VetCirurgico))
+        {
+            <MudNavLink Href="/pet/vet/cirurgias" Icon="@Icons.Material.Filled.Healing">Cirurgias, Termos &amp; Lab</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.ConveniosPet))
+        {
+            <MudNavLink Href="/pet/convenios" Icon="@Icons.Material.Filled.HealthAndSafety">Convênios Pet</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.PortalTutor))
+        {
+            <MudNavLink Href="/pet/portal-tutor" Icon="@Icons.Material.Filled.AccountCircle">Portal do Tutor</MudNavLink>
+        }
+        @if (_modulosAtivos.Contains(ModulosPet.WhatsApp))
+        {
+            <MudNavLink Href="/pet/whatsapp" Icon="@Icons.Material.Filled.Chat">WhatsApp &amp; Outbox</MudNavLink>
+        }
     </MudNavGroup>
 
     <MudNavGroup Title="Financeiro" Icon="@Icons.Material.Filled.AttachMoney" Expanded="false">
@@ -80,6 +122,23 @@
     </MudNavGroup>
 
     <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="px-4 py-2 mt-4 font-weight-bold">ADMINISTRAÇÃO</MudText>
-    <MudNavLink Href="/admin/usuarios" Icon="@Icons.Material.Filled.ManageAccounts">Usuários & Permissões</MudNavLink>
+    <MudNavLink Href="/admin/modulos" Icon="@Icons.Material.Filled.Extension">Planos &amp; Módulos</MudNavLink>
+    <MudNavLink Href="/admin/usuarios" Icon="@Icons.Material.Filled.ManageAccounts">Usuários &amp; Permissões</MudNavLink>
     <MudNavLink Href="/admin/auditoria" Icon="@Icons.Material.Filled.History">Logs de Auditoria</MudNavLink>
 </MudNavMenu>
+
+@code {
+    private HashSet<string> _modulosAtivos = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _modulosAtivos = await ModuloService.GetModulosAtivosAsync();
+        }
+        catch
+        {
+            _modulosAtivos = new(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+}

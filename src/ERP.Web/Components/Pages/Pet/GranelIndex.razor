@@ -1,0 +1,149 @@
+@page "/pet/granel"
+@using ERP.Application.Common.Interfaces
+@using ERP.Application.Pet.Granel
+@using MediatR
+@using Microsoft.EntityFrameworkCore
+@inject IMediator Mediator
+@inject IApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>Fracionamento a Granel - ERP Pet</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Fracionamento a Granel &amp; Balança</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Converta sacos fechados em saldo a granel (kg) com rateio automático de custo médio e leitor de etiqueta EAN-13 de balança.
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="7">
+            <MudPaper Class="pa-4 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Abrir Saco Fechado para Granel</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int" @bind-Value="_produtoSacoId" Label="Produto Saco Fechado" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var p in _produtos)
+                            {
+                                <MudSelectItem Value="p.Id">@p.Codigo - @p.Nome</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int" @bind-Value="_produtoGranelId" Label="Produto Granel (kg)" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var p in _produtos)
+                            {
+                                <MudSelectItem Value="p.Id">@p.Codigo - @p.Nome</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudSelect T="int" @bind-Value="_depositoId" Label="Depósito" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            @foreach (var d in _depositos)
+                            {
+                                <MudSelectItem Value="d.Id">@d.Nome</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField T="decimal" @bind-Value="_qtdSacos" Label="Qtd. Sacos" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField T="decimal?" @bind-Value="_pesoPorSacoKg" Label="Peso por Saco (kg)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" Class="d-flex justify-end">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AbrirSaco">Executar Fracionamento</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="5">
+            <MudPaper Class="pa-4 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-3">Simulador de Etiqueta de Balança (EAN-13)</MudText>
+                <MudTextField @bind-Value="_codigoBalanca" Label="Código de Barras (ex: 2000123015009)"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="mt-2" OnClick="TestarEtiqueta">
+                    Decodificar Etiqueta
+                </MudButton>
+                @if (_resultadoBalanca != null)
+                {
+                    <MudAlert Severity="@(_resultadoBalanca.EhEtiquetaBalanca ? Severity.Success : Severity.Warning)" Class="mt-3">
+                        @if (_resultadoBalanca.EhEtiquetaBalanca)
+                        {
+                            <span>Produto: <strong>@_resultadoBalanca.CodigoProduto</strong> | Peso: <strong>@_resultadoBalanca.PesoKg?.ToString("N3") kg</strong></span>
+                        }
+                        else
+                        {
+                            <span>Não é uma etiqueta de balança padrão EAN-13 iniciada por '2'.</span>
+                        }
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="_historico" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Data</MudTh>
+            <MudTh>Saco Fechado</MudTh>
+            <MudTh>Produto Granel</MudTh>
+            <MudTh>Depósito</MudTh>
+            <MudTh>Qtd. Sacos</MudTh>
+            <MudTh>Peso Gerado</MudTh>
+            <MudTh>Custo/kg</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.DataAbertura.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+            <MudTd>@context.NomeProdutoSaco</MudTd>
+            <MudTd>@context.NomeProdutoGranel</MudTd>
+            <MudTd>@context.NomeDeposito</MudTd>
+            <MudTd>@context.QuantidadeSacos.ToString("N2")</MudTd>
+            <MudTd>@context.PesoTotalGeradoKg.ToString("N3") kg</MudTd>
+            <MudTd>@context.CustoUnitarioGranel.ToString("C4")</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<ERP.Domain.Core.Entities.Cadastros.Produto> _produtos = new();
+    private List<ERP.Domain.Core.Entities.Estoque.Deposito> _depositos = new();
+    private List<AberturaSacoGranelDto> _historico = new();
+
+    private int _produtoSacoId;
+    private int _produtoGranelId;
+    private int _depositoId;
+    private decimal _qtdSacos = 1;
+    private decimal? _pesoPorSacoKg = 15;
+    private string? _codigoBalanca = "2000123015009";
+    private BalancaBarcodeResult? _resultadoBalanca;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _produtos = await DbContext.Produtos.AsNoTracking().OrderBy(p => p.Nome).Take(200).ToListAsync();
+        _depositos = await DbContext.Depositos.AsNoTracking().OrderBy(d => d.Nome).ToListAsync();
+        if (_produtos.Count > 0) { _produtoSacoId = _produtos[0].Id; _produtoGranelId = _produtos[0].Id; }
+        if (_depositos.Count > 0) _depositoId = _depositos[0].Id;
+        await CarregarHistorico();
+    }
+
+    private async Task CarregarHistorico()
+    {
+        var res = await Mediator.Send(new GetAberturasGranelQuery());
+        if (res.Sucesso && res.Dados != null)
+            _historico = res.Dados;
+    }
+
+    private async Task AbrirSaco()
+    {
+        var res = await Mediator.Send(new AbrirSacoGranelCommand(_produtoSacoId, _produtoGranelId, _depositoId, _qtdSacos, _pesoPorSacoKg));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Fracionamento realizado e estoque atualizado!", Severity.Success);
+            await CarregarHistorico();
+        }
+        else
+            Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private void TestarEtiqueta() => _resultadoBalanca = BalancaBarcodeParser.Parse(_codigoBalanca);
+}
