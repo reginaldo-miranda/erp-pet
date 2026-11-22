@@ -81,8 +81,17 @@ else
             </MudMenu>
         </MudAppBar>
 
-        <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
-            <NavMenu />
+        @if (!_drawerOpen)
+        {
+            <div style="position:fixed; left:0; top:var(--mud-appbar-height); bottom:0; width:14px; z-index:1200;"
+                 @onmouseenter="@(() => _drawerOpen = true)"></div>
+        }
+
+        <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always"
+                   Variant="DrawerVariant.Temporary">
+            <div style="height:100%;" @onmouseleave="@(() => _drawerOpen = false)">
+                <NavMenu />
+            </div>
         </MudDrawer>
 
         <MudMainContent Class="px-6 pb-8" Style="padding-top: calc(var(--mud-appbar-height) + 1.5rem) !important; min-height: 100vh; overflow-y: auto;">
@@ -94,7 +103,7 @@ else
 }
 
 @code {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen = false;
     private bool _isDarkMode = true; // Tema Dark por padrão
 
     private bool IsLoginPage => Nav.Uri.EndsWith("/login", StringComparison.OrdinalIgnoreCase);

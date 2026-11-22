@@ -41,7 +41,8 @@ public record ExameDto(
     StatusExameVet Status,
     DateTime DataSolicitacao,
     DateTime? DataResultado,
-    string? ResultadoTexto);
+    string? ResultadoTexto,
+    string? LaudoUrl);
 
 // ==================== CIRURGIAS ====================
 
@@ -97,7 +98,7 @@ public class AgendarCirurgiaCommandHandler : IRequestHandler<AgendarCirurgiaComm
     {
         var cir = new CirurgiaVeterinaria
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Numero = $"CIR-{DateTime.UtcNow:yyyyMMddHHmmss}",
             PetId = request.PetId,
             ClienteId = request.ClienteId,
@@ -158,7 +159,7 @@ public class CriarTermoConsentimentoCommandHandler : IRequestHandler<CriarTermoC
     {
         var termo = new TermoConsentimentoPet
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             PetId = request.PetId,
             ClienteId = request.ClienteId,
             Tipo = request.Tipo,
@@ -209,10 +210,34 @@ public class GetExamesVetQueryHandler : IRequestHandler<GetExamesVetQuery, Resul
             .Include(e => e.Pet)
             .OrderByDescending(e => e.DataSolicitacao)
             .Take(100)
-            .Select(e => new ExameDto(e.Id, e.Pet.Nome, e.Tipo, e.NomeExame, e.CodigoAmostraLis, e.Status, e.DataSolicitacao, e.DataResultado, e.ResultadoTexto))
+            .Select(e => new ExameDto(e.Id, e.Pet.Nome, e.Tipo, e.NomeExame, e.CodigoAmostraLis, e.Status, e.DataSolicitacao, e.DataResultado, e.ResultadoTexto, e.LaudoUrl))
             .ToListAsync(cancellationToken);
 
         return Result<List<ExameDto>>.Ok(list);
+    }
+}
+
+[RequerModulo(ModulosPet.VetCirurgico)]
+public record AnexarImagemExameCommand(int ExameId, string LaudoUrl) : IRequest<Result<bool>>;
+
+public class AnexarImagemExameCommandHandler : IRequestHandler<AnexarImagemExameCommand, Result<bool>>
+{
+    private readonly IApplicationDbContext _context;
+    public AnexarImagemExameCommandHandler(IApplicationDbContext context) => _context = context;
+
+    public async Task<Result<bool>> Handle(AnexarImagemExameCommand request, CancellationToken cancellationToken)
+    {
+        var exame = await _context.ExamesVeterinarios.FirstOrDefaultAsync(e => e.Id == request.ExameId, cancellationToken);
+        if (exame == null) return Result<bool>.Falha("Exame não encontrado.");
+
+        exame.LaudoUrl = request.LaudoUrl;
+        if (exame.Status == StatusExameVet.Solicitado)
+        {
+            exame.Status = StatusExameVet.ResultadoRecebido;
+            exame.DataResultado = DateTime.UtcNow;
+        }
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result<bool>.Ok(true);
     }
 }
 
@@ -233,7 +258,7 @@ public class SolicitarExameVetCommandHandler : IRequestHandler<SolicitarExameVet
     {
         var exame = new ExameVeterinario
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             PetId = request.PetId,
             VeterinarioSolicitanteId = request.VeterinarioSolicitanteId,
             Tipo = request.Tipo,

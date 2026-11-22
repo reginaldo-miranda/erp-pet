@@ -15,6 +15,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddHostedService<ERP.Infrastructure.Services.VencimentoNotificacaoService>();
 builder.Services.AddHostedService<ERP.Infrastructure.Services.EstoqueNotificacaoService>();
+builder.Services.AddHostedService<ERP.Infrastructure.Services.WhatsAppOutboxWorker>();
 
 // MudBlazor Services
 builder.Services.AddMudServices();

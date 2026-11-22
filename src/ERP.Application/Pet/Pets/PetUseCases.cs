@@ -158,7 +158,7 @@ public class CreatePetCommandHandler : IRequestHandler<CreatePetCommand, Result<
         if (!tutorExiste)
             return Result<int>.Falha("Tutor principal não encontrado.");
 
-        var empresaId = _empresaService.EmpresaId ?? 0;
+        var empresaId = _empresaService.EmpresaId ?? 1;
 
         var pet = new Domain.Core.Entities.Pet.Pet
         {
@@ -292,7 +292,7 @@ public class VincularTutorPetCommandHandler : IRequestHandler<VincularTutorPetCo
 
         _context.TutorPets.Add(new TutorPet
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             PetId = request.PetId,
             ClienteId = request.ClienteId,
             TipoVinculo = request.TipoVinculo,

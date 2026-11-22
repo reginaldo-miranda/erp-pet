@@ -149,7 +149,7 @@ public class AbrirComandaCommandHandler : IRequestHandler<AbrirComandaCommand, R
         var numero = $"CMD-{DateTime.UtcNow:yyyyMMddHHmmss}";
         var comanda = new ComandaAtendimento
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Numero = numero,
             ClienteId = request.ClienteId,
             PetId = request.PetId,
@@ -249,7 +249,7 @@ public class AdicionarItemComandaCommandHandler : IRequestHandler<AdicionarItemC
     }
 }
 
-public record FecharComandaCommand(int ComandaId) : IRequest<Result<ResumoSplitFiscalDto>>;
+public record FecharComandaCommand(int ComandaId, int? VendaPdvId = null) : IRequest<Result<ResumoSplitFiscalDto>>;
 
 public class FecharComandaCommandHandler : IRequestHandler<FecharComandaCommand, Result<ResumoSplitFiscalDto>>
 {
@@ -275,6 +275,8 @@ public class FecharComandaCommandHandler : IRequestHandler<FecharComandaCommand,
         AdicionarItemComandaCommandHandler.RecalcularTotais(comanda);
         comanda.Status = StatusComanda.Faturada;
         comanda.DataFechamento = DateTime.UtcNow;
+        if (request.VendaPdvId.HasValue)
+            comanda.VendaPdvId = request.VendaPdvId.Value;
 
         await _context.SaveChangesAsync(cancellationToken);
 

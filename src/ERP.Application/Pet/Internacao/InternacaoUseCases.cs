@@ -89,7 +89,7 @@ public class CreateBaiaInternacaoCommandHandler : IRequestHandler<CreateBaiaInte
 
         var baia = new BaiaInternacao
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Codigo = request.Codigo.Trim().ToUpperInvariant(),
             Nome = string.IsNullOrWhiteSpace(request.Nome) ? request.Codigo.Trim() : request.Nome.Trim(),
             Setor = request.Setor,
@@ -173,7 +173,7 @@ public class AdmitirInternacaoCommandHandler : IRequestHandler<AdmitirInternacao
 
         var internacao = new InternacaoPet
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Numero = $"INT-{DateTime.UtcNow:yyyyMMddHHmmss}",
             PetId = request.PetId,
             ClienteId = request.ClienteId,
@@ -216,7 +216,7 @@ public class PrescreverInternacaoCommandHandler : IRequestHandler<PrescreverInte
 
     public async Task<Result<int>> Handle(PrescreverInternacaoCommand request, CancellationToken cancellationToken)
     {
-        var empresaId = _empresaService.EmpresaId ?? 0;
+        var empresaId = _empresaService.EmpresaId ?? 1;
         var intervalo = Math.Max(1, request.IntervaloHoras);
         var doses = Math.Clamp(request.NumeroDoses, 1, 24);
         var inicio = DateTime.UtcNow;
@@ -354,17 +354,23 @@ public class RegistrarEvolucaoInternacaoCommandHandler : IRequestHandler<Registr
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentEmpresaService _empresaService;
-    public RegistrarEvolucaoInternacaoCommandHandler(IApplicationDbContext context, ICurrentEmpresaService empresaService)
+    private readonly IModuloService _moduloService;
+    public RegistrarEvolucaoInternacaoCommandHandler(
+        IApplicationDbContext context,
+        ICurrentEmpresaService empresaService,
+        IModuloService moduloService)
     {
         _context = context;
         _empresaService = empresaService;
+        _moduloService = moduloService;
     }
 
     public async Task<Result<int>> Handle(RegistrarEvolucaoInternacaoCommand request, CancellationToken cancellationToken)
     {
+        var empresaId = _empresaService.EmpresaId ?? 1;
         var ev = new EvolucaoInternacao
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = empresaId,
             InternacaoPetId = request.InternacaoPetId,
             DataHora = DateTime.UtcNow,
             Turno = request.Turno,
@@ -377,6 +383,35 @@ public class RegistrarEvolucaoInternacaoCommandHandler : IRequestHandler<Registr
         };
 
         _context.EvolucoesInternacao.Add(ev);
+
+        if (request.VisivelBoletimTutor && await _moduloService.ModuloAtivoAsync(ModulosPet.WhatsApp, cancellationToken))
+        {
+            var internacao = await _context.InternacoesPet.AsNoTracking()
+                .Include(i => i.Pet)
+                .Include(i => i.Cliente)
+                .FirstOrDefaultAsync(i => i.Id == request.InternacaoPetId, cancellationToken);
+
+            var tel = internacao?.Cliente.Celular ?? internacao?.Cliente.Telefone;
+            if (internacao != null && !string.IsNullOrWhiteSpace(tel))
+            {
+                var cfgWpp = await _context.ConfiguracoesWhatsAppEmpresa.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                if (cfgWpp == null || cfgWpp.EnviarBoletimInternacao)
+                {
+                    _context.NotificacoesWhatsAppOutbox.Add(new NotificacaoWhatsAppOutbox
+                    {
+                        EmpresaId = internacao.EmpresaId,
+                        ClienteId = internacao.ClienteId,
+                        PetId = internacao.PetId,
+                        TelefoneDestino = tel,
+                        TipoEvento = TipoEventoWhatsApp.BoletimInternacao,
+                        Mensagem = $"Boletim ({request.Turno}) de {internacao.Pet.Nome}: {request.DescricaoEvolucao.Trim()}",
+                        Status = StatusNotificacaoWhatsApp.Pendente,
+                        DataAgendada = DateTime.UtcNow
+                    });
+                }
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
         return Result<int>.Ok(ev.Id);
     }

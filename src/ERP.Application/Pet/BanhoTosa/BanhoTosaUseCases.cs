@@ -122,7 +122,7 @@ public class CreateTabelaPrecoBanhoCommandHandler : IRequestHandler<CreateTabela
 
         var item = new TabelaPrecoBanho
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             NomeServico = request.NomeServico.Trim(),
             Porte = request.Porte,
             TipoPelagem = request.TipoPelagem,
@@ -178,7 +178,7 @@ public class CreateRecursoBanhoCommandHandler : IRequestHandler<CreateRecursoBan
 
         var rec = new RecursoBanhoTosa
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Nome = request.Nome.Trim(),
             Tipo = request.Tipo
         };
@@ -247,7 +247,7 @@ public class CreatePacoteBanhoCommandHandler : IRequestHandler<CreatePacoteBanho
 
         var pacote = new PacoteBanhoPet
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             ClienteId = request.ClienteId,
             PetId = request.PetId,
             NomePacote = request.NomePacote.Trim(),
@@ -384,7 +384,7 @@ public class AgendarBanhoCommandHandler : IRequestHandler<AgendarBanhoCommand, R
 
         var atendimento = new AtendimentoBanhoTosa
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Numero = $"BT-{DateTime.UtcNow:yyyyMMddHHmmss}",
             PetId = request.PetId,
             ClienteId = request.ClienteId,
@@ -456,11 +456,18 @@ public record AvancarStatusBanhoCommand(
 public class AvancarStatusBanhoCommandHandler : IRequestHandler<AvancarStatusBanhoCommand, Result<bool>>
 {
     private readonly IApplicationDbContext _context;
-    public AvancarStatusBanhoCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly IModuloService _moduloService;
+    public AvancarStatusBanhoCommandHandler(IApplicationDbContext context, IModuloService moduloService)
+    {
+        _context = context;
+        _moduloService = moduloService;
+    }
 
     public async Task<Result<bool>> Handle(AvancarStatusBanhoCommand request, CancellationToken cancellationToken)
     {
         var at = await _context.AtendimentosBanhoTosa
+            .Include(a => a.Pet)
+            .Include(a => a.Cliente)
             .Include(a => a.TabelaPrecoBanho)
             .Include(a => a.PacoteBanhoPet)
             .Include(a => a.Comissoes)
@@ -546,6 +553,27 @@ public class AvancarStatusBanhoCommandHandler : IRequestHandler<AvancarStatusBan
                         DocumentoFiscalDestino = DocumentoFiscalDestino.NFSe
                     });
                     AdicionarItemComandaCommandHandler.RecalcularTotais(comanda);
+                }
+            }
+
+            // Enfileirar WhatsApp automático de Banho Pronto
+            var telefoneTutor = at.Cliente.Celular ?? at.Cliente.Telefone;
+            if (!string.IsNullOrWhiteSpace(telefoneTutor) && await _moduloService.ModuloAtivoAsync(ModulosPet.WhatsApp, cancellationToken))
+            {
+                var cfgWpp = await _context.ConfiguracoesWhatsAppEmpresa.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                if (cfgWpp == null || cfgWpp.EnviarBanhoPronto)
+                {
+                    _context.NotificacoesWhatsAppOutbox.Add(new NotificacaoWhatsAppOutbox
+                    {
+                        EmpresaId = at.EmpresaId,
+                        ClienteId = at.ClienteId,
+                        PetId = at.PetId,
+                        TelefoneDestino = telefoneTutor,
+                        TipoEvento = TipoEventoWhatsApp.BanhoPronto,
+                        Mensagem = $"Olá {at.Cliente.Nome}! O banho/tosa de {at.Pet.Nome} ({at.Numero}) foi finalizado e já está pronto para retirada.",
+                        Status = StatusNotificacaoWhatsApp.Pendente,
+                        DataAgendada = DateTime.UtcNow
+                    });
                 }
             }
         }

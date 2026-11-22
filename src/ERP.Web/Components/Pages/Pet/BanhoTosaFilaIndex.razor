@@ -9,15 +9,10 @@
 
 <PageTitle>Banho &amp; Tosa - Fila e Agenda</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <div class="d-flex justify-space-between align-center mb-4">
-        <div>
-            <MudText Typo="Typo.h4">Banho &amp; Tosa — Agenda &amp; Fila em Tempo Real</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Agendamento por box/profissional, check-in com checklist de saúde/pertences e fluxo Kanban.
-            </MudText>
-        </div>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <div class="d-flex justify-space-between align-center mb-2">
+        <MudText Typo="Typo.h5">Banho &amp; Tosa — Agenda &amp; Fila em Tempo Real</MudText>
+        <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
                    OnClick="() => _exibirAgendamento = !_exibirAgendamento">
             @(_exibirAgendamento ? "Fechar Agendamento" : "Novo Agendamento")
         </MudButton>
@@ -90,7 +85,7 @@
                     <MudTextField @bind-Value="_pertences" Label="Pertences (coleira, guia, etc.)" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" md="4">
-                    <MudTextField @bind-Value="_fotoEntrada" Label="URL Foto Entrada" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <ERP.Web.Components.Shared.CameraPhotoCapture Label="Foto Entrada (Câmera)" @bind-ImageUrl="_fotoEntrada" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudTextField @bind-Value="_obsCheckIn" Label="Observações Check-in" Variant="Variant.Outlined" Margin="Margin.Dense" />

@@ -13,10 +13,10 @@
 
 <PageTitle>Internação 24h &amp; Mapa de Baias</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Hospital Veterinário — Internação 24h, Baias &amp; Enfermagem</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <MudText Typo="Typo.h5" Class="mb-2">Internação 24h, Baias &amp; Enfermagem</MudText>
 
-    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-3">
         <MudTabPanel Text="Mapa de Baias & Admissão">
             <MudGrid Class="mb-4">
                 @foreach (var baia in _baias)
@@ -98,6 +98,66 @@
                         </MudButton>
                     </div>
 
+                    <div class="d-flex gap-2 mb-3">
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                   OnClick="() => AbrirPrescricao(inter.Id)">
+                            + Nova Prescrição
+                        </MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
+                                   OnClick="() => AbrirEvolucao(inter.Id)">
+                            + Registrar Evolução
+                        </MudButton>
+                    </div>
+
+                    @if (_prescricaoInternacaoId == inter.Id)
+                    {
+                        <MudPaper Class="pa-3 mb-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">Nova Prescrição Aprazada</MudText>
+                            <MudGrid AlignItems="Center">
+                                <MudItem xs="12" md="3">
+                                    <MudSelect T="int?" @bind-Value="_prescProdutoId" Label="Produto Estoque (Opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                        @foreach (var p in _produtos) { <MudSelectItem T="int?" Value="p.Id">@p.Nome</MudSelectItem> }
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" md="3"><MudTextField @bind-Value="_prescMed" Label="Medicação *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="6" md="2"><MudTextField @bind-Value="_prescDose" Label="Dose *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="6" md="1"><MudNumericField T="int" @bind-Value="_prescIntervalo" Label="h/h" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="6" md="1"><MudNumericField T="int" @bind-Value="_prescDoses" Label="Doses" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="6" md="2"><MudNumericField T="decimal" @bind-Value="_prescValor" Label="Valor/Dose" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="12" Class="d-flex justify-end gap-2">
+                                    <MudButton Size="Size.Small" OnClick="() => _prescricaoInternacaoId = null">Cancelar</MudButton>
+                                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarPrescricao">Salvar Prescrição</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    }
+
+                    @if (_evolucaoInternacaoId == inter.Id)
+                    {
+                        <MudPaper Class="pa-3 mb-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">Registrar Evolução de Plantão</MudText>
+                            <MudGrid AlignItems="Center">
+                                <MudItem xs="6" md="2">
+                                    <MudSelect T="string" @bind-Value="_evolTurno" Label="Turno" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                        <MudSelectItem Value="@("Manhã")">Manhã</MudSelectItem>
+                                        <MudSelectItem Value="@("Tarde")">Tarde</MudSelectItem>
+                                        <MudSelectItem Value="@("Noite")">Noite</MudSelectItem>
+                                        <MudSelectItem Value="@("Madrugada")">Madrugada</MudSelectItem>
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="6" md="3"><MudTextField @bind-Value="_evolProfissional" Label="Profissional *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="4" md="2"><MudNumericField T="decimal?" @bind-Value="_evolTemp" Label="Temp (°C)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="4" md="2"><MudNumericField T="int?" @bind-Value="_evolFc" Label="FC (bpm)" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                                <MudItem xs="4" md="3"><MudCheckBox @bind-Value="_evolVisivelTutor" Label="Enviar Boletim Tutor" /></MudItem>
+                                <MudItem xs="12"><MudTextField @bind-Value="_evolDesc" Label="Descrição da Evolução *" Lines="2" Variant="Variant.Outlined" /></MudItem>
+                                <MudItem xs="12" Class="d-flex justify-end gap-2">
+                                    <MudButton Size="Size.Small" OnClick="() => _evolucaoInternacaoId = null">Cancelar</MudButton>
+                                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Secondary" OnClick="SalvarEvolucao">Salvar Evolução</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    }
+
                     <MudText Typo="Typo.subtitle2" Class="mt-3 mb-1">Grade Horária de Enfermagem</MudText>
                     <MudTable Items="inter.ChecagensPendentes" Dense="true" Hover="true">
                         <HeaderContent><MudTh>Previsto</MudTh><MudTh>Medicação</MudTh><MudTh>Dose</MudTh><MudTh>Status</MudTh><MudTh>Ação</MudTh></HeaderContent>
@@ -129,6 +189,23 @@
     private List<VeterinarioDto> _vets = new();
     private List<ComandaAtendimentoDto> _comandasAbertas = new();
     private int? _depositoPadraoId;
+    private List<ERP.Domain.Core.Entities.Cadastros.Produto> _produtos = new();
+
+    private int? _prescricaoInternacaoId;
+    private int? _prescProdutoId;
+    private string _prescMed = string.Empty;
+    private string _prescDose = string.Empty;
+    private int _prescIntervalo = 8;
+    private int _prescDoses = 3;
+    private decimal _prescValor;
+
+    private int? _evolucaoInternacaoId;
+    private string _evolTurno = "Manhã";
+    private string _evolProfissional = "Plantonista";
+    private decimal? _evolTemp;
+    private int? _evolFc;
+    private string _evolDesc = string.Empty;
+    private bool _evolVisivelTutor = true;
 
     private int _petId;
     private int _clienteId;
@@ -146,6 +223,7 @@
     {
         var dep = await DbContext.Depositos.AsNoTracking().FirstOrDefaultAsync();
         _depositoPadraoId = dep?.Id;
+        _produtos = await DbContext.Produtos.AsNoTracking().OrderBy(p => p.Nome).Take(200).ToListAsync();
 
         var pRes = await Mediator.Send(new GetPetsQuery());
         if (pRes.Sucesso && pRes.Dados != null) { _pets = pRes.Dados; if (_pets.Count > 0) OnPetChanged(_pets[0].Id); }
@@ -208,6 +286,54 @@
     {
         var res = await Mediator.Send(new DarAltaInternacaoCommand(internacaoId, StatusInternacaoPet.AltaMedica));
         if (res.Sucesso) { Snackbar.Add("Alta médica registrada e diárias lançadas!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private void AbrirPrescricao(int internacaoId)
+    {
+        _prescricaoInternacaoId = internacaoId;
+        _evolucaoInternacaoId = null;
+    }
+
+    private async Task SalvarPrescricao()
+    {
+        if (_prescricaoInternacaoId == null || string.IsNullOrWhiteSpace(_prescMed) || string.IsNullOrWhiteSpace(_prescDose))
+        {
+            Snackbar.Add("Informe medicação e dose.", Severity.Warning);
+            return;
+        }
+        var res = await Mediator.Send(new PrescreverInternacaoCommand(
+            _prescricaoInternacaoId.Value, _prescProdutoId, _prescMed, _prescDose, "IV/VO", 1m, _prescIntervalo, _prescDoses, _prescValor));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Prescrição aprazada criada!", Severity.Success);
+            _prescMed = ""; _prescDose = ""; _prescricaoInternacaoId = null;
+            await CarregarTudo();
+        }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private void AbrirEvolucao(int internacaoId)
+    {
+        _evolucaoInternacaoId = internacaoId;
+        _prescricaoInternacaoId = null;
+    }
+
+    private async Task SalvarEvolucao()
+    {
+        if (_evolucaoInternacaoId == null || string.IsNullOrWhiteSpace(_evolDesc))
+        {
+            Snackbar.Add("Informe a descrição da evolução.", Severity.Warning);
+            return;
+        }
+        var res = await Mediator.Send(new RegistrarEvolucaoInternacaoCommand(
+            _evolucaoInternacaoId.Value, _evolTurno, _evolProfissional, _evolTemp, _evolFc, null, _evolDesc, _evolVisivelTutor));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Evolução registrada!", Severity.Success);
+            _evolDesc = ""; _evolucaoInternacaoId = null;
+            await CarregarTudo();
+        }
         else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
     }
 }

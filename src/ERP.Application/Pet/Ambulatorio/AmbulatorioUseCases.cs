@@ -118,17 +118,36 @@ public class CreateVeterinarioCommandHandler : IRequestHandler<CreateVeterinario
         _empresaService = empresaService;
     }
 
+    private static readonly HashSet<string> UfsValidas = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
+        "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
+    };
+
     public async Task<Result<int>> Handle(CreateVeterinarioCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Nome) || string.IsNullOrWhiteSpace(request.Crmv))
             return Result<int>.Falha("Nome e CRMV do veterinário são obrigatórios.");
 
+        var crmvLimpo = new string(request.Crmv.Where(char.IsDigit).ToArray());
+        if (crmvLimpo.Length < 3 || crmvLimpo.Length > 10)
+            return Result<int>.Falha("CRMV inválido. Informe de 3 a 10 dígitos numéricos.");
+
+        var ufLimpa = (request.UfCrmv ?? string.Empty).Trim().ToUpperInvariant();
+        if (!UfsValidas.Contains(ufLimpa))
+            return Result<int>.Falha("UF do CRMV inválida. Use a sigla de um estado brasileiro (ex: SP, RJ, MG).");
+
+        var jaExiste = await _context.Veterinarios
+            .AnyAsync(v => v.Crmv == crmvLimpo && v.UfCrmv == ufLimpa, cancellationToken);
+        if (jaExiste)
+            return Result<int>.Falha($"Já existe um veterinário cadastrado com o CRMV {crmvLimpo}/{ufLimpa}.");
+
         var vet = new Veterinario
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Nome = request.Nome.Trim(),
-            Crmv = request.Crmv.Trim(),
-            UfCrmv = request.UfCrmv.Trim().ToUpperInvariant(),
+            Crmv = crmvLimpo,
+            UfCrmv = ufLimpa,
             Especialidade = request.Especialidade,
             Telefone = request.Telefone,
             Email = request.Email,
@@ -202,7 +221,7 @@ public class AgendarConsultaVetCommandHandler : IRequestHandler<AgendarConsultaV
 
         var consulta = new ConsultaVeterinaria
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Numero = $"VET-{DateTime.UtcNow:yyyyMMddHHmmss}",
             PetId = request.PetId,
             ClienteId = request.ClienteId,
@@ -375,7 +394,7 @@ public class EmitirReceitaVetCommandHandler : IRequestHandler<EmitirReceitaVetCo
         if (request.Itens.Count == 0)
             return Result<int>.Falha("Adicione ao menos um medicamento à receita.");
 
-        var empresaId = _empresaService.EmpresaId ?? 0;
+        var empresaId = _empresaService.EmpresaId ?? 1;
         var receita = new ReceitaVeterinaria
         {
             EmpresaId = empresaId,
@@ -495,7 +514,7 @@ public class RegistrarVacinaVermifugoCommandHandler : IRequestHandler<RegistrarV
 
         var reg = new VacinacaoVermifugoPet
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             PetId = request.PetId,
             VeterinarioId = request.VeterinarioId,
             Tipo = request.Tipo,

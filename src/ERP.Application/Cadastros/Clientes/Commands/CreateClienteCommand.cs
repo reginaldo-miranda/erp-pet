@@ -58,6 +58,7 @@ public class CreateClienteCommandHandler : IRequestHandler<CreateClienteCommand,
         var existe = await _context.Clientes.AnyAsync(c => c.CpfCnpj == cpfCnpjLimpo, cancellationToken);
         if (existe) return Result<ClienteDto>.Falha("Já existe um cliente com este CPF/CNPJ.");
 
+        var empresaId = _empresaService.EmpresaId ?? 1;
         var cliente = new Cliente
         {
             Nome = request.Nome,
@@ -70,7 +71,7 @@ public class CreateClienteCommandHandler : IRequestHandler<CreateClienteCommand,
             InscricaoEstadual = request.InscricaoEstadual,
             LimiteCredito = request.LimiteCredito,
             Observacoes = request.Observacoes,
-            EmpresaId = _empresaService.EmpresaId!.Value
+            EmpresaId = empresaId
         };
 
         if (request.Enderecos?.Any() == true)

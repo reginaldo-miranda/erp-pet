@@ -75,7 +75,7 @@ public class CreateConvenioPetCommandHandler : IRequestHandler<CreateConvenioPet
 
         var convenio = new ConvenioPet
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             Nome = request.Nome.Trim(),
             Cnpj = request.Cnpj,
             Telefone = request.Telefone,

@@ -9,13 +9,10 @@
 
 <PageTitle>Fracionamento a Granel - ERP Pet</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-2">Fracionamento a Granel &amp; Balança</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        Converta sacos fechados em saldo a granel (kg) com rateio automático de custo médio e leitor de etiqueta EAN-13 de balança.
-    </MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <MudText Typo="Typo.h5" Class="mb-2">Fracionamento a Granel &amp; Balança</MudText>
 
-    <MudGrid>
+    <MudGrid Spacing="2">
         <MudItem xs="12" md="7">
             <MudPaper Class="pa-4 mb-4" Elevation="2">
                 <MudText Typo="Typo.h6" Class="mb-3">Abrir Saco Fechado para Granel</MudText>
@@ -82,7 +79,7 @@
         </MudItem>
     </MudGrid>
 
-    <MudTable Items="_historico" Hover="true" Striped="true" Elevation="2">
+    <MudTable Items="_historico" Dense="true" Hover="true" Striped="true" Elevation="2">
         <HeaderContent>
             <MudTh>Data</MudTh>
             <MudTh>Saco Fechado</MudTh>

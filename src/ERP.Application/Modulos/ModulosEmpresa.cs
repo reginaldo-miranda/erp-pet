@@ -70,9 +70,10 @@ public class GetModulosEmpresaQueryHandler : IRequestHandler<GetModulosEmpresaQu
 
     public async Task<Result<ConfiguracaoModulosEmpresaDto>> Handle(GetModulosEmpresaQuery request, CancellationToken cancellationToken)
     {
-        var empresaId = _empresaService.EmpresaId;
+        var empresaId = _empresaService.EmpresaId
+            ?? await _context.Empresas.AsNoTracking().OrderBy(e => e.Id).Select(e => (int?)e.Id).FirstOrDefaultAsync(cancellationToken);
         if (empresaId == null)
-            return Result<ConfiguracaoModulosEmpresaDto>.Falha("Nenhuma empresa selecionada.");
+            return Result<ConfiguracaoModulosEmpresaDto>.Falha("Nenhuma empresa encontrada.");
 
         var empresa = await _context.Empresas.AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == empresaId.Value, cancellationToken);
@@ -129,9 +130,10 @@ public class AplicarPlanoEmpresaCommandHandler : IRequestHandler<AplicarPlanoEmp
 
     public async Task<Result<bool>> Handle(AplicarPlanoEmpresaCommand request, CancellationToken cancellationToken)
     {
-        var empresaId = _empresaService.EmpresaId;
+        var empresaId = _empresaService.EmpresaId
+            ?? await _context.Empresas.AsNoTracking().OrderBy(e => e.Id).Select(e => (int?)e.Id).FirstOrDefaultAsync(cancellationToken);
         if (empresaId == null)
-            return Result<bool>.Falha("Nenhuma empresa selecionada.");
+            return Result<bool>.Falha("Nenhuma empresa encontrada.");
 
         var empresa = await _context.Empresas.FirstOrDefaultAsync(e => e.Id == empresaId.Value, cancellationToken);
         if (empresa == null)
@@ -198,9 +200,10 @@ public class ToggleModuloEmpresaCommandHandler : IRequestHandler<ToggleModuloEmp
 
     public async Task<Result<bool>> Handle(ToggleModuloEmpresaCommand request, CancellationToken cancellationToken)
     {
-        var empresaId = _empresaService.EmpresaId;
+        var empresaId = _empresaService.EmpresaId
+            ?? await _context.Empresas.AsNoTracking().OrderBy(e => e.Id).Select(e => (int?)e.Id).FirstOrDefaultAsync(cancellationToken);
         if (empresaId == null)
-            return Result<bool>.Falha("Nenhuma empresa selecionada.");
+            return Result<bool>.Falha("Nenhuma empresa encontrada.");
 
         var existeCatalogo = await _context.ModulosSistema.AnyAsync(m => m.Codigo == request.ModuloCodigo, cancellationToken);
         if (!existeCatalogo)

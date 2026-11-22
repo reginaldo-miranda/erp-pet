@@ -1,18 +1,20 @@
 using ERP.Application.Common.Interfaces;
+using ERP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ERP.Infrastructure.Services;
 
 public class ModuloService : IModuloService
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ICurrentEmpresaService _empresaService;
     private HashSet<string>? _cacheModulos;
     private int? _cacheEmpresaId;
 
-    public ModuloService(IApplicationDbContext context, ICurrentEmpresaService empresaService)
+    public ModuloService(IServiceScopeFactory scopeFactory, ICurrentEmpresaService empresaService)
     {
-        _context = context;
+        _scopeFactory = scopeFactory;
         _empresaService = empresaService;
     }
 
@@ -25,14 +27,26 @@ public class ModuloService : IModuloService
     public async Task<HashSet<string>> GetModulosAtivosAsync(CancellationToken cancellationToken = default)
     {
         var empresaId = _empresaService.EmpresaId;
+
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
         if (empresaId == null)
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        {
+            empresaId = await db.Empresas.AsNoTracking()
+                .OrderBy(e => e.Id)
+                .Select(e => (int?)e.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (empresaId == null)
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
 
         if (_cacheModulos != null && _cacheEmpresaId == empresaId)
             return _cacheModulos;
 
         var agora = DateTime.UtcNow;
-        var codigos = await _context.EmpresaModulos
+        var codigos = await db.EmpresaModulos
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(em => em.EmpresaId == empresaId.Value
                          && em.Ativo

@@ -40,7 +40,7 @@ public class CreateFornecedorCommandHandler : IRequestHandler<CreateFornecedorCo
             RazaoSocial = request.RazaoSocial, NomeFantasia = request.NomeFantasia, Cnpj = cnpjLimpo,
             InscricaoEstadual = request.InscricaoEstadual, Email = request.Email, Telefone = request.Telefone,
             Celular = request.Celular, Contato = request.Contato, Site = request.Site,
-            Observacoes = request.Observacoes, EmpresaId = _empresaService.EmpresaId!.Value
+            Observacoes = request.Observacoes, EmpresaId = _empresaService.EmpresaId ?? 1
         };
         _context.Fornecedores.Add(fornecedor);
         await _context.SaveChangesAsync(cancellationToken);

@@ -87,7 +87,7 @@ public class SalvarConfigWhatsAppCommandHandler : IRequestHandler<SalvarConfigWh
         var cfg = await _context.ConfiguracoesWhatsAppEmpresa.FirstOrDefaultAsync(cancellationToken);
         if (cfg == null)
         {
-            cfg = new ConfiguracaoWhatsAppEmpresa { EmpresaId = _empresaService.EmpresaId ?? 0 };
+            cfg = new ConfiguracaoWhatsAppEmpresa { EmpresaId = _empresaService.EmpresaId ?? 1 };
             _context.ConfiguracoesWhatsAppEmpresa.Add(cfg);
         }
 
@@ -143,7 +143,7 @@ public class EnfileirarWhatsAppCommandHandler : IRequestHandler<EnfileirarWhatsA
 
         var item = new NotificacaoWhatsAppOutbox
         {
-            EmpresaId = _empresaService.EmpresaId ?? 0,
+            EmpresaId = _empresaService.EmpresaId ?? 1,
             ClienteId = request.ClienteId,
             PetId = request.PetId,
             TelefoneDestino = request.TelefoneDestino.Trim(),
@@ -231,7 +231,7 @@ public class GerarAcessoPortalTutorCommandHandler : IRequestHandler<GerarAcessoP
         {
             acesso = new AcessoPortalTutor
             {
-                EmpresaId = _empresaService.EmpresaId ?? 0,
+                EmpresaId = _empresaService.EmpresaId ?? 1,
                 ClienteId = request.ClienteId,
                 TokenAcesso = Guid.NewGuid().ToString("N")[..12].ToUpperInvariant(),
                 ValidoAte = DateTime.UtcNow.AddDays(30)

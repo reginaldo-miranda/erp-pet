@@ -6,13 +6,14 @@
 @using MediatR
 @inject IMediator Mediator
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Centro Cirúrgico, Termos &amp; Exames HL7/LIS</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Centro Cirúrgico, Termos de Consentimento &amp; Exames (HL7/LIS)</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <MudText Typo="Typo.h5" Class="mb-2">Centro Cirúrgico, Termos de Consentimento &amp; Exames (HL7/LIS)</MudText>
 
-    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-3">
         <MudTabPanel Text="Cirurgias & Anestesia">
             <MudGrid Class="mb-4" AlignItems="Center">
                 <MudItem xs="12" md="3">
@@ -56,6 +57,7 @@
                     <MudTd>@context.NomePet</MudTd><MudTd>@context.NomeTutor</MudTd><MudTd>@context.Tipo</MudTd><MudTd>@context.Titulo</MudTd>
                     <MudTd><MudChip T="string" Size="Size.Small" Color="@(context.Assinado ? Color.Success : Color.Warning)">@(context.Assinado ? $"Assinado ({context.AssinadoPorNome})" : "Pendente")</MudChip></MudTd>
                     <MudTd>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Class="mr-1" OnClick="() => ImprimirTermo(context)">Imprimir</MudButton>
                         @if (!context.Assinado)
                         {
                             <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success" OnClick="() => AssinarTermo(context)">Assinar Agora</MudButton>
@@ -87,10 +89,14 @@
             </MudGrid>
 
             <MudTable Items="_exames" Hover="true" Striped="true">
-                <HeaderContent><MudTh>Pet</MudTh><MudTh>Exame</MudTh><MudTh>Amostra LIS</MudTh><MudTh>Status</MudTh><MudTh>Resultado</MudTh></HeaderContent>
+                <HeaderContent><MudTh>Pet</MudTh><MudTh>Exame</MudTh><MudTh>Amostra LIS</MudTh><MudTh>Status</MudTh><MudTh>Resultado</MudTh><MudTh>Anexo / Câmera</MudTh></HeaderContent>
                 <RowTemplate>
                     <MudTd>@context.NomePet</MudTd><MudTd>@context.NomeExame</MudTd><MudTd>@context.CodigoAmostraLis</MudTd>
                     <MudTd>@context.Status</MudTd><MudTd>@(context.ResultadoTexto ?? "-")</MudTd>
+                    <MudTd>
+                        <ERP.Web.Components.Shared.CameraPhotoCapture Label="Foto Laudo" ImageUrl="@context.LaudoUrl"
+                            ImageUrlChanged="(url) => AnexarFotoExame(context.Id, url)" />
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
         </MudTabPanel>
@@ -179,5 +185,22 @@
         var res = await Mediator.Send(new ProcessarPayloadHl7Command(_payloadHl7));
         if (res.Sucesso) { Snackbar.Add(res.Dados ?? "HL7 integrado!", Severity.Success); await CarregarTudo(); }
         else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task AnexarFotoExame(int exameId, string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
+        var res = await Mediator.Send(new AnexarImagemExameCommand(exameId, url));
+        if (res.Sucesso) { Snackbar.Add("Imagem anexada ao exame!", Severity.Success); await CarregarTudo(); }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ImprimirTermo(TermoDto t)
+    {
+        var html = $@"<h2>{t.Titulo}</h2>
+            <p class='muted'>Tipo: {t.Tipo} | Pet: <b>{t.NomePet}</b> | Tutor: <b>{t.NomeTutor}</b></p>
+            <div class='box'>Autorizo a equipe médico-veterinária a realizar o procedimento indicado, ciente dos riscos inerentes.</div>
+            <p style='margin-top:30px'>Status: <b>{(t.Assinado ? $"Assinado por {t.AssinadoPorNome} em {t.DataAssinatura?.ToLocalTime():dd/MM/yyyy HH:mm}" : "Pendente de assinatura")}</b></p>";
+        await JS.InvokeVoidAsync("printHtmlDocument", t.Titulo, html);
     }
 }

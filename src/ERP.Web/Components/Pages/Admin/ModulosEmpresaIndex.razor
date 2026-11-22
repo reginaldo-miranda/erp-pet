@@ -7,11 +7,8 @@
 
 <PageTitle>Planos & Módulos - ERP Pet</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-2">Planos &amp; Módulos do Sistema</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        Configure o porte da empresa (Pequeno, Médio ou Grande) ou ative módulos individuais (Add-ons).
-    </MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <MudText Typo="Typo.h5" Class="mb-2">Planos &amp; Módulos do Sistema</MudText>
 
     @if (_carregando)
     {
@@ -44,7 +41,7 @@
             </MudGrid>
         </MudPaper>
 
-        <MudTable Items="_config.Modulos" Hover="true" Striped="true" Elevation="2">
+        <MudTable Items="_config.Modulos" Dense="true" Hover="true" Striped="true" Elevation="2">
             <HeaderContent>
                 <MudTh>Módulo</MudTh>
                 <MudTh>Categoria</MudTh>

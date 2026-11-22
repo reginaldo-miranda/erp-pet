@@ -1,5 +1,8 @@
 @using ERP.Application.Common.Interfaces
+@using ERP.Web.Services
+@implements IDisposable
 @inject IModuloService ModuloService
+@inject CustomAuthStateProvider AuthState
 
 <MudNavMenu Class="mud-width-full">
     <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="px-4 py-2 font-weight-bold">PAINEL PRINCIPAL</MudText>
@@ -132,6 +135,30 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AuthState.AuthenticationStateChanged += OnAuthStateChanged;
+        await CarregarModulosAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.GetAuthenticationStateAsync();
+            await CarregarModulosAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        await task;
+        ModuloService.InvalidarCache();
+        await CarregarModulosAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CarregarModulosAsync()
+    {
         try
         {
             _modulosAtivos = await ModuloService.GetModulosAtivosAsync();
@@ -140,5 +167,10 @@
         {
             _modulosAtivos = new(StringComparer.OrdinalIgnoreCase);
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.AuthenticationStateChanged -= OnAuthStateChanged;
     }
 }

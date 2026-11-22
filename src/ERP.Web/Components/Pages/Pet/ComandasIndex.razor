@@ -8,18 +8,16 @@
 @inject IMediator Mediator
 @inject IApplicationDbContext DbContext
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Comandas Unificadas - ERP Pet</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-2">Comandas Unificadas (Loja + Banho &amp; Tosa + Hospital)</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        Centralize consumos de todos os setores em uma única comanda com split fiscal automático (NFC-e/NF-e vs NFS-e) e cobertura de convênio.
-    </MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <MudText Typo="Typo.h5" Class="mb-2">Comandas Unificadas (Loja + Banho &amp; Tosa + Hospital)</MudText>
 
-    <MudPaper Class="pa-4 mb-4" Elevation="2">
-        <MudText Typo="Typo.h6" Class="mb-3">Abrir Nova Comanda</MudText>
-        <MudGrid AlignItems="Center">
+    <MudPaper Class="pa-3 mb-3" Elevation="2">
+        <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Abrir Nova Comanda</b></MudText>
+        <MudGrid Spacing="2" AlignItems="Center">
             <MudItem xs="12" md="4">
                 <MudSelect T="int" @bind-Value="_clienteId" Label="Tutor *" Variant="Variant.Outlined" Margin="Margin.Dense">
                     @foreach (var c in _clientes)
@@ -42,7 +40,56 @@
         </MudGrid>
     </MudPaper>
 
-    <MudTable Items="_comandas" Hover="true" Striped="true" Elevation="2">
+    @if (_comandaSelecionada != null)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="3">
+            <div class="d-flex justify-space-between align-center mb-3">
+                <MudText Typo="Typo.h6">Itens da Comanda @_comandaSelecionada.Numero (@_comandaSelecionada.NomeTutor)</MudText>
+                <MudButton Size="Size.Small" OnClick="() => _comandaSelecionada = null">Fechar</MudButton>
+            </div>
+
+            @if (_comandaSelecionada.Status == StatusComanda.Aberta)
+            {
+                <MudGrid AlignItems="Center" Class="mb-3">
+                    <MudItem xs="6" md="2">
+                        <MudSelect T="TipoComandaItem" @bind-Value="_novoTipoItem" Label="Tipo" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="TipoComandaItem.Produto">Produto (NFC-e)</MudSelectItem>
+                            <MudSelectItem Value="TipoComandaItem.Servico">Serviço (NFS-e)</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="6" md="3">
+                        @if (_novoTipoItem == TipoComandaItem.Produto)
+                        {
+                            <MudSelect T="int?" Value="_novoProdutoId" Label="Produto" Variant="Variant.Outlined" Margin="Margin.Dense" ValueChanged="OnProdutoSelecionado">
+                                @foreach (var p in _produtos) { <MudSelectItem T="int?" Value="p.Id">@p.Nome (@p.PrecoVenda.ToString("C2"))</MudSelectItem> }
+                            </MudSelect>
+                        }
+                        else
+                        {
+                            <MudSelect T="int?" Value="_novoServicoId" Label="Serviço" Variant="Variant.Outlined" Margin="Margin.Dense" ValueChanged="OnServicoSelecionado">
+                                @foreach (var s in _servicos) { <MudSelectItem T="int?" Value="s.Id">@s.Nome (@s.PrecoBase.ToString("C2"))</MudSelectItem> }
+                            </MudSelect>
+                        }
+                    </MudItem>
+                    <MudItem xs="12" md="3"><MudTextField @bind-Value="_novaDescricao" Label="Descrição *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="4" md="1"><MudNumericField T="decimal" @bind-Value="_novaQtd" Label="Qtd" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="4" md="2"><MudNumericField T="decimal" @bind-Value="_novoValorUnit" Label="Valor Unit." Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                    <MudItem xs="4" md="1"><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AdicionarItem">Lançar</MudButton></MudItem>
+                </MudGrid>
+            }
+
+            <MudTable Items="_comandaSelecionada.Itens" Dense="true" Hover="true">
+                <HeaderContent><MudTh>Origem</MudTh><MudTh>Descrição</MudTh><MudTh>Qtd</MudTh><MudTh>Unit.</MudTh><MudTh>Fiscal</MudTh><MudTh>Total</MudTh></HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Origem</MudTd><MudTd>@context.Descricao</MudTd><MudTd>@context.Quantidade.ToString("N2")</MudTd>
+                    <MudTd>@context.ValorUnitario.ToString("C2")</MudTd><MudTd>@context.DocumentoFiscalDestino</MudTd>
+                    <MudTd><strong>@context.ValorTotal.ToString("C2")</strong></MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+
+    <MudTable Items="_comandas" Dense="true" Hover="true" Striped="true" Elevation="2">
         <HeaderContent>
             <MudTh>Número</MudTh>
             <MudTh>Tutor / Pet</MudTh>
@@ -66,6 +113,14 @@
             <MudTd>@context.ValorCobertoConvenio.ToString("C2")</MudTd>
             <MudTd><strong>@context.ValorLiquido.ToString("C2")</strong></MudTd>
             <MudTd>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="mr-1"
+                           OnClick="() => _comandaSelecionada = context">
+                    Itens
+                </MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default" Class="mr-1"
+                           OnClick="() => ImprimirComanda(context)">
+                    Imprimir
+                </MudButton>
                 @if (context.Status == StatusComanda.Aberta)
                 {
                     <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
@@ -84,11 +139,22 @@
     private List<PetDto> _pets = new();
     private int _clienteId;
     private int? _petId;
+    private ComandaAtendimentoDto? _comandaSelecionada;
+    private List<ERP.Domain.Core.Entities.Cadastros.Produto> _produtos = new();
+    private List<ERP.Domain.Core.Entities.Cadastros.Servico> _servicos = new();
+    private TipoComandaItem _novoTipoItem = TipoComandaItem.Produto;
+    private int? _novoProdutoId;
+    private int? _novoServicoId;
+    private string _novaDescricao = string.Empty;
+    private decimal _novaQtd = 1;
+    private decimal _novoValorUnit;
 
     protected override async Task OnInitializedAsync()
     {
         _clientes = await DbContext.Clientes.AsNoTracking().OrderBy(c => c.Nome).Take(200).ToListAsync();
         if (_clientes.Count > 0) _clienteId = _clientes[0].Id;
+        _produtos = await DbContext.Produtos.AsNoTracking().OrderBy(p => p.Nome).Take(200).ToListAsync();
+        _servicos = await DbContext.Servicos.AsNoTracking().OrderBy(s => s.Nome).Take(200).ToListAsync();
 
         var petsRes = await Mediator.Send(new GetPetsQuery());
         if (petsRes.Sucesso && petsRes.Dados != null) _pets = petsRes.Dados;
@@ -129,5 +195,59 @@
         }
         else
             Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private void OnProdutoSelecionado(int? prodId)
+    {
+        _novoProdutoId = prodId;
+        var p = _produtos.FirstOrDefault(x => x.Id == prodId);
+        if (p != null) { _novaDescricao = p.Nome; _novoValorUnit = p.PrecoVenda; }
+    }
+
+    private void OnServicoSelecionado(int? servId)
+    {
+        _novoServicoId = servId;
+        var s = _servicos.FirstOrDefault(x => x.Id == servId);
+        if (s != null) { _novaDescricao = s.Nome; _novoValorUnit = s.PrecoBase; }
+    }
+
+    private async Task AdicionarItem()
+    {
+        if (_comandaSelecionada == null || string.IsNullOrWhiteSpace(_novaDescricao)) return;
+        var origem = _novoTipoItem == TipoComandaItem.Produto ? OrigemComandaItem.Loja : OrigemComandaItem.BanhoTosa;
+        var res = await Mediator.Send(new AdicionarItemComandaCommand(
+            _comandaSelecionada.Id, origem, _novoTipoItem, _novoProdutoId, _novoServicoId,
+            _novaDescricao, _novaQtd, _novoValorUnit, 0m, false, true));
+        if (res.Sucesso)
+        {
+            Snackbar.Add("Item lançado na comanda!", Severity.Success);
+            _novaDescricao = string.Empty;
+            await CarregarComandas();
+            _comandaSelecionada = _comandas.FirstOrDefault(c => c.Id == _comandaSelecionada.Id);
+        }
+        else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ImprimirComanda(ComandaAtendimentoDto cmd)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"<h2>Comanda {cmd.Numero}</h2>");
+        sb.Append($"<p class='muted'>Tutor: <b>{cmd.NomeTutor}</b>");
+        if (!string.IsNullOrWhiteSpace(cmd.NomePet))
+            sb.Append($" | Pet: <b>{cmd.NomePet}</b>");
+        sb.Append($" | Status: {cmd.Status}</p>");
+        sb.Append("<table><thead><tr><th>Setor</th><th>Descrição</th><th>Qtd</th><th>Fiscal</th><th>Total</th></tr></thead><tbody>");
+        foreach (var i in cmd.Itens)
+        {
+            sb.Append($"<tr><td>{i.Origem}</td><td>{i.Descricao}</td><td>{i.Quantidade:N2}</td><td>{i.DocumentoFiscalDestino}</td><td>{i.ValorTotal:C2}</td></tr>");
+        }
+        sb.Append("</tbody></table>");
+        sb.Append("<div class='box'>");
+        sb.Append($"<div>Produtos (NFC-e/NF-e): <b>{cmd.SplitFiscal.TotalProdutosNfceNfe:C2}</b></div>");
+        sb.Append($"<div>Serviços (NFS-e): <b>{cmd.SplitFiscal.TotalServicosNfse:C2}</b></div>");
+        sb.Append($"<div>Cobertura Convênio: <b>{cmd.ValorCobertoConvenio:C2}</b></div>");
+        sb.Append($"<h3>Total Líquido: {cmd.ValorLiquido:C2}</h3>");
+        sb.Append("</div>");
+        await JS.InvokeVoidAsync("printHtmlDocument", $"Comanda {cmd.Numero}", sb.ToString());
     }
 }

@@ -6,17 +6,18 @@
 @using MediatR
 @inject IMediator Mediator
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Ambulatório Veterinário &amp; Prontuário SOAP</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Hospital Veterinário — Ambulatório, Triagem, SOAP &amp; Receituário</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <MudText Typo="Typo.h5" Class="mb-2">Ambulatório, Triagem, Prontuário SOAP &amp; Receituário</MudText>
 
-    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-3">
         <MudTabPanel Text="Agenda & Consultas">
-            <MudPaper Class="pa-4 mb-4" Outlined="true">
-                <MudText Typo="Typo.h6" Class="mb-3">Agendar Consulta</MudText>
-                <MudGrid AlignItems="Center">
+            <MudPaper Class="pa-3 mb-3" Outlined="true">
+                <MudText Typo="Typo.subtitle1" Class="mb-2"><b>Agendar Consulta</b></MudText>
+                <MudGrid Spacing="2" AlignItems="Center">
                     <MudItem xs="12" md="3">
                         <MudSelect T="int" Value="_petId" Label="Pet *" Variant="Variant.Outlined" Margin="Margin.Dense" ValueChanged="OnPetChanged">
                             @foreach (var p in _pets) { <MudSelectItem Value="p.Id">@p.Nome (@p.Especie)</MudSelectItem> }
@@ -73,7 +74,7 @@
                 </MudPaper>
             }
 
-            <MudTable Items="_consultas" Hover="true" Striped="true">
+            <MudTable Items="_consultas" Dense="true" Hover="true" Striped="true">
                 <HeaderContent>
                     <MudTh>Número</MudTh><MudTh>Data/Hora</MudTh><MudTh>Pet</MudTh><MudTh>Veterinário</MudTh><MudTh>Tipo</MudTh><MudTh>Status</MudTh><MudTh>Ações</MudTh>
                 </HeaderContent>
@@ -127,28 +128,36 @@
                 </MudGrid>
             </MudPaper>
 
-            <MudTable Items="_receitas" Hover="true" Striped="true">
-                <HeaderContent><MudTh>Data</MudTh><MudTh>Pet</MudTh><MudTh>Veterinário</MudTh><MudTh>Tipo</MudTh><MudTh>Itens</MudTh></HeaderContent>
+            <MudTable Items="_receitas" Dense="true" Hover="true" Striped="true">
+                <HeaderContent><MudTh>Data</MudTh><MudTh>Pet</MudTh><MudTh>Veterinário</MudTh><MudTh>Tipo</MudTh><MudTh>Itens</MudTh><MudTh>Ação</MudTh></HeaderContent>
                 <RowTemplate>
                     <MudTd>@context.DataEmissao.ToLocalTime().ToString("dd/MM/yyyy")</MudTd>
                     <MudTd>@context.NomePet</MudTd>
                     <MudTd>@context.NomeVeterinario (@context.Crmv)</MudTd>
                     <MudTd>@context.Tipo</MudTd>
                     <MudTd>@string.Join("; ", context.Itens.Select(i => $"{i.Medicamento} ({i.Posologia})"))</MudTd>
+                    <MudTd><MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="() => ImprimirReceita(context)">Imprimir</MudButton></MudTd>
                 </RowTemplate>
             </MudTable>
         </MudTabPanel>
 
         <MudTabPanel Text="Veterinários (CRMV)">
-            <MudGrid Class="mb-4" AlignItems="Center">
+            <MudGrid Spacing="2" Class="mb-3" AlignItems="Center">
                 <MudItem xs="12" md="3"><MudTextField @bind-Value="_vetNome" Label="Nome *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
                 <MudItem xs="6" md="2"><MudTextField @bind-Value="_vetCrmv" Label="CRMV *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
                 <MudItem xs="6" md="1"><MudTextField @bind-Value="_vetUf" Label="UF *" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
-                <MudItem xs="12" md="2"><MudTextField @bind-Value="_vetEsp" Label="Especialidade" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+                <MudItem xs="6" md="2"><MudTextField @bind-Value="_vetEsp" Label="Especialidade" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
                 <MudItem xs="6" md="2"><MudNumericField T="decimal" @bind-Value="_vetValor" Label="Valor Consulta" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
-                <MudItem xs="6" md="2"><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarVet">Cadastrar</MudButton></MudItem>
+                <MudItem xs="12" md="2" Class="d-flex justify-end gap-1 flex-wrap">
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" OnClick="SalvarVet">Cadastrar</MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                               Href="https://siscad.cfmv.gov.br/paginas/busca" Target="_blank"
+                               StartIcon="@Icons.Material.Filled.OpenInNew">
+                        CFMV
+                    </MudButton>
+                </MudItem>
             </MudGrid>
-            <MudTable Items="_vets" Hover="true" Striped="true">
+            <MudTable Items="_vets" Dense="true" Hover="true" Striped="true">
                 <HeaderContent><MudTh>Nome</MudTh><MudTh>CRMV</MudTh><MudTh>Especialidade</MudTh><MudTh>Valor Consulta</MudTh></HeaderContent>
                 <RowTemplate>
                     <MudTd><strong>@context.Nome</strong></MudTd>
@@ -290,5 +299,16 @@
         var res = await Mediator.Send(new CreateVeterinarioCommand(_vetNome, _vetCrmv, _vetUf, _vetEsp, null, null, _vetValor));
         if (res.Sucesso) { Snackbar.Add("Veterinário cadastrado!", Severity.Success); _vetNome = ""; _vetCrmv = ""; await CarregarTudo(); }
         else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ImprimirReceita(ReceitaVetDto r)
+    {
+        var itensHtml = string.Join("", r.Itens.Select((i, idx) =>
+            $"<li><b>{idx + 1}. {i.Medicamento}</b> — {i.Posologia} {(i.ViaAdministracao != null ? $"({i.ViaAdministracao})" : "")}</li>"));
+        var html = $@"<h2>Receituário Veterinário ({r.Tipo})</h2>
+            <p class='muted'>Data: {r.DataEmissao.ToLocalTime():dd/MM/yyyy} | Paciente (Pet): <b>{r.NomePet}</b></p>
+            <div class='box'><ul>{itensHtml}</ul></div>
+            <p style='margin-top:40px'>__________________________________________<br/><b>{r.NomeVeterinario}</b> — CRMV {r.Crmv}</p>";
+        await JS.InvokeVoidAsync("printHtmlDocument", $"Receita - {r.NomePet}", html);
     }
 }

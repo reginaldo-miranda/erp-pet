@@ -81,6 +81,12 @@
                 Pré-Venda
             </MudButton>
 
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Pets"
+                       OnClick="PuxarComandaPet">
+                Comanda Pet
+            </MudButton>
+
             <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small"
                        StartIcon="@Icons.Material.Filled.Settings"
                            OnClick="@(() => Navigation.NavigateTo("/pdv/terminais"))">
@@ -361,6 +367,8 @@
 
     private int? _preVendaId;
     private string? _preVendaNumero;
+    private int? _comandaPetId;
+    private string? _comandaPetNumero;
     private int? _clienteId;
     private int? _vendedorId;
     private decimal _valorDesconto;
@@ -433,25 +441,47 @@
         if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_buscaProduto))
         {
             var termo = _buscaProduto.Trim();
+
+            // 1. Verificar se é etiqueta EAN-13 de balança (iniciada por '2')
+            var balanca = ERP.Application.Pet.Granel.BalancaBarcodeParser.Parse(termo);
+            if (balanca.EhEtiquetaBalanca && !string.IsNullOrWhiteSpace(balanca.CodigoProduto))
+            {
+                var candidatos = await Mediator.Send(new BuscarProdutosPdvQuery(balanca.CodigoProduto));
+                var prodBalanca = candidatos.FirstOrDefault(p =>
+                    string.Equals(p.Codigo, balanca.CodigoProduto, StringComparison.OrdinalIgnoreCase) ||
+                    p.Codigo.EndsWith(balanca.CodigoProduto, StringComparison.OrdinalIgnoreCase));
+
+                if (prodBalanca is not null)
+                {
+                    var peso = balanca.PesoKg ?? 1m;
+                    AdicionarProdutoAoCarrinho(prodBalanca, peso);
+                    Snackbar.Add($"Etiqueta de balança: {prodBalanca.Nome} ({peso:N3} kg)", Severity.Info);
+                    _buscaProduto = string.Empty;
+                    await BuscarProdutos(null);
+                    return;
+                }
+            }
+
+            // 2. Busca padrão por código de barras ou código interno
             var exato = _produtos.FirstOrDefault(p =>
                 string.Equals(p.CodigoBarras, termo, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(p.Codigo, termo, StringComparison.OrdinalIgnoreCase));
 
             if (exato is not null)
             {
-                AdicionarProdutoAoCarrinho(exato);
+                AdicionarProdutoAoCarrinho(exato, 1m);
                 _buscaProduto = string.Empty;
                 await BuscarProdutos(null);
             }
         }
     }
 
-    private void AdicionarProdutoAoCarrinho(ProdutoPdvDto produto)
+    private void AdicionarProdutoAoCarrinho(ProdutoPdvDto produto, decimal quantidade = 1m)
     {
         var existente = _itens.FirstOrDefault(i => i.ProdutoId == produto.Id);
         if (existente is not null)
         {
-            existente.Quantidade += 1;
+            existente.Quantidade += quantidade;
         }
         else
         {
@@ -460,7 +490,7 @@
                 ProdutoId = produto.Id,
                 CodigoProduto = produto.Codigo,
                 NomeProduto = produto.Nome,
-                Quantidade = 1,
+                Quantidade = quantidade,
                 ValorUnitario = produto.PrecoVenda,
                 ValorDesconto = 0,
                 ImagemUrl = produto.ImagemUrl
@@ -487,6 +517,8 @@
     {
         _preVendaId = null;
         _preVendaNumero = null;
+        _comandaPetId = null;
+        _comandaPetNumero = null;
         _clienteId = null;
         _vendedorId = null;
         _valorDesconto = 0;
@@ -540,6 +572,41 @@
             }).ToList();
 
             Snackbar.Add($"Pré-venda {preVenda.Numero} carregada no carrinho.", Severity.Info);
+        }
+    }
+
+    private async Task PuxarComandaPet()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<PdvComandasDialog>("Comandas Pet em Aberto", options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is ERP.Application.Pet.Comandas.ComandaAtendimentoDto comanda)
+        {
+            _comandaPetId = comanda.Id;
+            _comandaPetNumero = comanda.Numero;
+            _clienteId = comanda.ClienteId;
+            _observacoes = $"Comanda {comanda.Numero} ({comanda.NomeTutor})";
+
+            var itensProduto = comanda.Itens.Where(i => i.ProdutoId.HasValue && i.ProdutoId.Value > 0).ToList();
+            _itens = itensProduto.Select(i => new VendaPdvItemInputDto
+            {
+                ProdutoId = i.ProdutoId!.Value,
+                CodigoProduto = i.ProdutoId.Value.ToString(),
+                NomeProduto = i.Descricao,
+                Quantidade = i.Quantidade,
+                ValorUnitario = i.ValorUnitario,
+                ValorDesconto = i.ValorDesconto
+            }).ToList();
+
+            if (_itens.Count == 0 && comanda.ValorLiquido > 0)
+            {
+                Snackbar.Add($"Comanda {comanda.Numero} possui apenas serviços (NFS-e: {comanda.SplitFiscal.TotalServicosNfse:C2}). Feche diretamente em Operação Pet -> Comandas Unificadas ou adicione produtos aqui.", Severity.Warning);
+            }
+            else
+            {
+                Snackbar.Add($"Comanda {comanda.Numero} carregada (NFC-e: {comanda.SplitFiscal.TotalProdutosNfceNfe:C2} | NFS-e: {comanda.SplitFiscal.TotalServicosNfse:C2}).", Severity.Info);
+            }
         }
     }
 
@@ -600,7 +667,16 @@
         _processando = true;
         try
         {
+            var comandaIdVinculada = _comandaPetId;
             var vendaId = await Mediator.Send(new FinalizarVendaPdvCommand(MontarVendaDto(pagamentos)));
+            if (comandaIdVinculada.HasValue)
+            {
+                var cmdRes = await Mediator.Send(new ERP.Application.Pet.Comandas.FecharComandaCommand(comandaIdVinculada.Value, vendaId));
+                if (cmdRes.Sucesso && cmdRes.Dados != null)
+                {
+                    Snackbar.Add($"Comanda vinculada faturada! NFC-e: {cmdRes.Dados.TotalProdutosNfceNfe:C2} | NFS-e: {cmdRes.Dados.TotalServicosNfse:C2}", Severity.Info);
+                }
+            }
             Snackbar.Add("Venda PDV finalizada com sucesso!", Severity.Success);
             LimparCarrinho();
             await OnTerminalChanged(_terminalSelecionadoId);

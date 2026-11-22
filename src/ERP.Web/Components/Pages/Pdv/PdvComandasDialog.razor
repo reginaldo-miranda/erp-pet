@@ -1,0 +1,64 @@
+@using ERP.Application.Pet.Comandas
+@using ERP.Domain.Core.Enums
+@using MediatR
+@inject IMediator Mediator
+
+<MudDialog>
+    <DialogContent>
+        @if (_carregando)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (_comandas.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Nenhuma Comanda Pet em aberto no momento.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="_comandas" Hover="true" Dense="true">
+                <HeaderContent>
+                    <MudTh>Número</MudTh>
+                    <MudTh>Tutor / Pet</MudTh>
+                    <MudTh>NFC-e (Prod)</MudTh>
+                    <MudTh>NFS-e (Serv)</MudTh>
+                    <MudTh>Líquido</MudTh>
+                    <MudTh>Ação</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd><strong>@context.Numero</strong></MudTd>
+                    <MudTd>@context.NomeTutor @(context.NomePet != null ? $"• {context.NomePet}" : "")</MudTd>
+                    <MudTd>@context.SplitFiscal.TotalProdutosNfceNfe.ToString("C2")</MudTd>
+                    <MudTd>@context.SplitFiscal.TotalServicosNfse.ToString("C2")</MudTd>
+                    <MudTd><strong>@context.ValorLiquido.ToString("C2")</strong></MudTd>
+                    <MudTd>
+                        <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="() => Selecionar(context)">
+                            Selecionar
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar">Fechar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private bool _carregando = true;
+    private List<ComandaAtendimentoDto> _comandas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Mediator.Send(new GetComandasQuery(StatusComanda.Aberta));
+        if (res.Sucesso && res.Dados != null)
+            _comandas = res.Dados;
+        _carregando = false;
+    }
+
+    private void Selecionar(ComandaAtendimentoDto cmd) => MudDialog.Close(DialogResult.Ok(cmd));
+    private void Cancelar() => MudDialog.Cancel();
+}

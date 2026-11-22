@@ -5,19 +5,20 @@
 @using MediatR
 @inject IMediator Mediator
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>Carteira de Vacinas &amp; Alertas</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <div class="d-flex justify-space-between align-center mb-4">
-        <div>
-            <MudText Typo="Typo.h4">Carteira de Vacinação, Vermífugos &amp; Alertas de Reforço</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Registro com lote/validade e acompanhamento automático de doses próximas ou vencidas.
-            </MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
+    <div class="d-flex justify-space-between align-center mb-2">
+        <MudText Typo="Typo.h5">Carteira de Vacinação, Vermífugos &amp; Alertas de Reforço</MudText>
+        <div class="d-flex align-center gap-3">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Print" OnClick="ImprimirCarteira">
+                Imprimir Carteira
+            </MudButton>
+            <MudSwitch T="bool" Value="_apenasAlertas" Color="Color.Warning" Label="Somente Alertas (30 dias)"
+                       ValueChanged="AlternarAlertas" />
         </div>
-        <MudSwitch T="bool" Value="_apenasAlertas" Color="Color.Warning" Label="Somente Alertas (30 dias)"
-                   ValueChanged="AlternarAlertas" />
     </div>
 
     <MudPaper Class="pa-4 mb-4" Elevation="2">
@@ -48,7 +49,7 @@
         </MudGrid>
     </MudPaper>
 
-    <MudTable Items="_registros" Hover="true" Striped="true" Elevation="2">
+    <MudTable Items="_registros" Dense="true" Hover="true" Striped="true" Elevation="2">
         <HeaderContent>
             <MudTh>Pet</MudTh><MudTh>Tutor</MudTh><MudTh>Tipo</MudTh><MudTh>Produto</MudTh><MudTh>Lote</MudTh><MudTh>Aplicação</MudTh><MudTh>Próximo Reforço</MudTh>
         </HeaderContent>
@@ -113,5 +114,14 @@
         var res = await Mediator.Send(new RegistrarVacinaVermifugoCommand(_petId, null, _tipo, _nomeProduto, null, _lote, null, null, _proximaAplicacao, null));
         if (res.Sucesso) { Snackbar.Add("Aplicação registrada!", Severity.Success); _nomeProduto = ""; _lote = null; await Carregar(); }
         else Snackbar.Add(string.Join(", ", res.Erros), Severity.Error);
+    }
+
+    private async Task ImprimirCarteira()
+    {
+        var linhas = string.Join("", _registros.Select(r =>
+            $"<tr><td>{r.NomePet}</td><td>{r.Tipo}</td><td>{r.NomeProduto}</td><td>{r.NumeroLote ?? "-"}</td><td>{r.DataAplicacao.ToLocalTime():dd/MM/yyyy}</td><td>{(r.ProximaAplicacao?.ToLocalTime().ToString("dd/MM/yyyy") ?? "-")}</td></tr>"));
+        var html = $@"<h2>Carteira de Vacinação &amp; Preventivos</h2>
+            <table><thead><tr><th>Pet</th><th>Tipo</th><th>Produto</th><th>Lote</th><th>Aplicação</th><th>Próximo Reforço</th></tr></thead><tbody>{linhas}</tbody></table>";
+        await JS.InvokeVoidAsync("printHtmlDocument", "Carteira de Vacinas", html);
     }
 }

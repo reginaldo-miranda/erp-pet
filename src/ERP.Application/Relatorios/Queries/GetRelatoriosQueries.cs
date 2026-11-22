@@ -28,8 +28,8 @@ public class GetRelatorioVendasQueryHandler : IRequestHandler<GetRelatorioVendas
     public async Task<RelatorioVendasResultDto> Handle(GetRelatorioVendasQuery request, CancellationToken cancellationToken)
     {
         int empresaId = _currentEmpresaService.EmpresaId ?? 1;
-        var dataInicio = request.DataInicio.Date;
-        var dataFim = request.DataFim.Date.AddDays(1).AddTicks(-1);
+        var dataInicio = DateTime.SpecifyKind(request.DataInicio.Date, DateTimeKind.Utc);
+        var dataFim = DateTime.SpecifyKind(request.DataFim.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
 
         var query = _context.PedidosVenda.AsNoTracking()
             .Include(p => p.Cliente)
@@ -100,8 +100,8 @@ public class GetRelatorioFinanceiroQueryHandler : IRequestHandler<GetRelatorioFi
     public async Task<RelatorioFinanceiroResultDto> Handle(GetRelatorioFinanceiroQuery request, CancellationToken cancellationToken)
     {
         int empresaId = _currentEmpresaService.EmpresaId ?? 1;
-        var dataInicio = request.DataInicio.Date;
-        var dataFim = request.DataFim.Date.AddDays(1).AddTicks(-1);
+        var dataInicio = DateTime.SpecifyKind(request.DataInicio.Date, DateTimeKind.Utc);
+        var dataFim = DateTime.SpecifyKind(request.DataFim.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
         var hoje = DateTime.UtcNow.Date;
 
         var lista = new List<RelatorioFinanceiroItemDto>();
@@ -326,8 +326,8 @@ public class GetRelatorioComprasQueryHandler : IRequestHandler<GetRelatorioCompr
     public async Task<RelatorioComprasResultDto> Handle(GetRelatorioComprasQuery request, CancellationToken cancellationToken)
     {
         int empresaId = _currentEmpresaService.EmpresaId ?? 1;
-        var dataInicio = request.DataInicio.Date;
-        var dataFim = request.DataFim.Date.AddDays(1).AddTicks(-1);
+        var dataInicio = DateTime.SpecifyKind(request.DataInicio.Date, DateTimeKind.Utc);
+        var dataFim = DateTime.SpecifyKind(request.DataFim.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
 
         var query = _context.EntradasMercadoria.AsNoTracking()
             .Include(e => e.Fornecedor)
@@ -391,8 +391,8 @@ public class GetRelatorioFiscalQueryHandler : IRequestHandler<GetRelatorioFiscal
     public async Task<RelatorioFiscalResultDto> Handle(GetRelatorioFiscalQuery request, CancellationToken cancellationToken)
     {
         int empresaId = _currentEmpresaService.EmpresaId ?? 1;
-        var dataInicio = request.DataInicio.Date;
-        var dataFim = request.DataFim.Date.AddDays(1).AddTicks(-1);
+        var dataInicio = DateTime.SpecifyKind(request.DataInicio.Date, DateTimeKind.Utc);
+        var dataFim = DateTime.SpecifyKind(request.DataFim.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
 
         var query = _context.NotasFiscais.AsNoTracking()
             .Include(n => n.Cliente)
